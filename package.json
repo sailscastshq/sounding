@@ -19,5 +19,13 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sailscastshq/sounding.git"
+  },
+  "homepage": "https://github.com/sailscastshq/sounding#readme",
+  "bugs": {
+    "url": "https://github.com/sailscastshq/sounding/issues"
   }
 }
