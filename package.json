@@ -1,6 +1,6 @@
 {
   "name": "sounding",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Testing framework for Sails applications and The Boring JavaScript Stack.",
   "main": "index.js",
   "license": "MIT",
@@ -13,12 +13,17 @@
   ],
   "files": [
     "index.js",
+    "lib",
     "README.md",
     "RESEARCH.md",
     "LICENSE"
   ],
-  "publishConfig": {
-    "access": "public"
+  "scripts": {
+    "test": "node --test"
+  },
+  "sails": {
+    "isHook": true,
+    "hookName": "sounding"
   },
   "repository": {
     "type": "git",
@@ -27,5 +32,8 @@
   "homepage": "https://github.com/sailscastshq/sounding#readme",
   "bugs": {
     "url": "https://github.com/sailscastshq/sounding/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
