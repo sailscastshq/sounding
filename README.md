@@ -14,6 +14,8 @@ The canonical Sails-native surface is:
 - `sails.sounding`
 - `sails.helpers.user.signupWithTeam(...)` inside trials
 - `get('/api/issues')` or `sails.sounding.request.get('/api/issues')` inside endpoint-style trials
+- `await auth.login.withPassword('creator@example.com', page, { password: 'secret123' })` inside browser trials
+- `await auth.request.withPassword('creator@example.com', { password: 'secret123' })` inside request trials
 - request helpers default to Sails virtual requests powered by `sails.request()`
 - Inertia-style visits can use `visit('/pricing')` and partial reload options like `{ component, only }`
 - a trial can opt into stricter parity with `test('...', { transport: 'http' }, ...)`
@@ -28,6 +30,7 @@ Sounding also owns its own built-in world engine, so the same package can:
 The default configuration story is intentionally calm:
 - Sounding disables its hook automatically when Sails runs in `production`
 - set `sounding.enableInProduction = true` only for controlled production-like environments such as staging
+- auth conventions auto-detect `User`/`userId` and `Creator`/`creatorId`, with `sounding.auth` available for overrides
 - Sounding manages a temporary `sails-sqlite` datastore by default
 - managed SQLite artifacts live under `.tmp/db`
 - the default datastore identity is `default`
