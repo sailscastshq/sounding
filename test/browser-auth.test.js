@@ -159,6 +159,88 @@ test('createAuthHelpers can issue magic links and log a browser page in as an ac
   assert.deepEqual(page.visits, ['/magic-link/token-123'])
 })
 
+test('createAuthHelpers can log in with password through the real browser form', async () => {
+  const calls = []
+  const page = {
+    async goto(target) {
+      calls.push(['goto', target])
+    },
+    async fill(selector, value) {
+      calls.push(['fill', selector, value])
+    },
+    async check(selector) {
+      calls.push(['check', selector])
+    },
+    async click(selector) {
+      calls.push(['click', selector])
+    },
+  }
+
+  const auth = createAuthHelpers({
+    sails: {
+      config: {
+        sounding: {
+          auth: {
+            password: {
+              pageQuery: {
+                mode: 'password',
+              },
+            },
+          },
+        },
+      },
+      models: {
+        user: {
+          async findOne(criteria) {
+            if (criteria.email === 'reader@example.com' || criteria.id === 1) {
+              return {
+                id: 1,
+                email: 'reader@example.com',
+                fullName: 'Reader Example',
+              }
+            }
+
+            return null
+          },
+        },
+      },
+    },
+    world: {
+      current: {
+        users: {
+          reader: {
+            id: 1,
+            email: 'reader@example.com',
+          },
+        },
+      },
+    },
+    mailbox: {
+      latest() {
+        return null
+      },
+    },
+    request: {
+      post: async () => ({ status: 302 }),
+    },
+  })
+
+  const login = await auth.login.withPassword('reader', page, {
+    password: 'secret123',
+    rememberMe: true,
+    returnUrl: '/dashboard',
+  })
+
+  assert.equal(login.path, '/login?mode=password&returnUrl=%2Fdashboard')
+  assert.deepEqual(calls, [
+    ['goto', '/login?mode=password&returnUrl=%2Fdashboard'],
+    ['fill', 'input[name="email"], input[type="email"]', 'reader@example.com'],
+    ['fill', 'input[name="password"], input[type="password"]', 'secret123'],
+    ['check', 'input[name="rememberMe"], input[id="rememberMe"], input[type="checkbox"]'],
+    ['click', 'button[type="submit"], input[type="submit"]'],
+  ])
+})
+
 test('createExpect can fall back to Playwright expect for browser objects', async () => {
   const calls = []
   const browserExpect = (actual) => ({

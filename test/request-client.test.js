@@ -3,6 +3,7 @@ const assert = require('node:assert/strict')
 const http = require('node:http')
 
 const { createRequestClient } = require('../lib/create-request-client')
+const { createAuthHelpers } = require('../lib/create-auth-helpers')
 const { createExpect } = require('../lib/create-expect')
 
 function listen(server) {
@@ -82,6 +83,130 @@ test('createRequestClient can attach an actor session for virtual policy checks'
   assert.equal(calls[0].session.userId, 24)
   assert.equal(calls[0].session.teamId, 8)
   assert.deepEqual(calls[0].session.__soundingFlashStore, {})
+})
+
+test('createRequestClient.as uses creatorId when Creator auth is detected', async () => {
+  const calls = []
+  const sails = {
+    models: {
+      creator: {},
+    },
+    router: {
+      route(req, res) {
+        calls.push(req)
+        res._clientRes.statusCode = 200
+        res._clientRes.headers = {
+          'content-type': 'application/json',
+        }
+        res._clientRes.end(JSON.stringify({ ok: true }))
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+
+  const request = createRequestClient({ sails })
+  await request.as({ id: 24 }).get('/dashboard')
+
+  assert.equal(calls[0].session.creatorId, 24)
+  assert.equal(calls[0].session.userId, undefined)
+})
+
+test('auth.request.withPassword preserves creator sessions through the shared request client', async () => {
+  const calls = []
+  const sails = {
+    models: {
+      creator: {
+        async findOne(criteria) {
+          if (criteria.id === 9 || criteria.email === 'creator@example.com') {
+            return {
+              id: 9,
+              email: 'creator@example.com',
+              firstName: 'Creator',
+            }
+          }
+
+          return null
+        },
+      },
+    },
+    router: {
+      route(req, res) {
+        calls.push(req)
+
+        if (req.method === 'POST' && req.url === '/login') {
+          req.session.creatorId = 9
+          res._clientRes.statusCode = 302
+          res._clientRes.headers = {
+            location: '/invoices',
+          }
+          res._clientRes.end('')
+          return
+        }
+
+        if (req.method === 'GET' && req.url === '/invoices') {
+          res._clientRes.statusCode = 200
+          res._clientRes.headers = {
+            'content-type': 'application/json',
+          }
+          res._clientRes.end(
+            JSON.stringify({
+              creatorId: req.session.creatorId || null,
+            })
+          )
+          return
+        }
+
+        res._clientRes.statusCode = 404
+        res._clientRes.end('')
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+
+  const request = createRequestClient({ sails })
+  const auth = createAuthHelpers({
+    sails,
+    world: {
+      current: {
+        creators: {
+          owner: {
+            id: 9,
+            email: 'creator@example.com',
+          },
+        },
+      },
+    },
+    mailbox: {
+      latest() {
+        return null
+      },
+    },
+    request,
+  })
+
+  const login = await auth.request.withPassword('owner', {
+    password: 'secret123',
+    rememberMe: true,
+    returnUrl: '/invoices',
+  })
+  const response = await request.get('/invoices')
+
+  createExpect(login.response).toHaveStatus(302)
+  createExpect(login.response).toRedirectTo('/invoices')
+  createExpect(response).toHaveStatus(200)
+  createExpect(response).toHaveJsonPath('creatorId', 9)
+  assert.deepEqual(calls[0].body, {
+    email: 'creator@example.com',
+    password: 'secret123',
+    rememberMe: true,
+    returnUrl: '/invoices',
+  })
+  assert.equal(calls[0].session.creatorId, 9)
+  assert.equal(calls[1].session.creatorId, 9)
 })
 
 test('createRequestClient normalizes non-2xx virtual responses without rejecting', async () => {
@@ -176,7 +301,6 @@ test('createRequestClient can use explicit HTTP transport when parity matters mo
     await close(server)
   }
 })
-
 
 test('createRequestClient can scope a client to http transport without changing the original client', async () => {
   const server = http.createServer((req, res) => {
