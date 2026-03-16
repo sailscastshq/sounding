@@ -1,6 +1,6 @@
 {
   "name": "sounding",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Testing framework for Sails applications and The Boring JavaScript Stack.",
   "main": "index.js",
   "license": "MIT",
