@@ -26,6 +26,8 @@ Sounding also owns its own built-in world engine, so the same package can:
 - capture outgoing mail by wrapping `sails.helpers.mail.send` and storing normalized messages in `sails.sounding.mailbox`
 
 The default configuration story is intentionally calm:
+- Sounding disables its hook automatically when Sails runs in `production`
+- set `sounding.enableInProduction = true` only for controlled production-like environments such as staging
 - Sounding manages a temporary `sails-sqlite` datastore by default
 - managed SQLite artifacts live under `.tmp/db`
 - the default datastore identity is `default`

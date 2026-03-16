@@ -10,6 +10,7 @@ test('Sounding resolves calm Sails-native defaults', () => {
   const config = resolveConfig({ config: {} })
 
   assert.deepEqual(config, getDefaultConfig())
+  assert.equal(config.enableInProduction, false)
   assert.equal(config.datastore.mode, 'managed')
   assert.equal(config.datastore.identity, 'default')
   assert.equal(config.datastore.adapter, 'sails-sqlite')
@@ -189,4 +190,70 @@ test('the hook exposes sails.sounding and sails.hooks.sounding', async () => {
   assert.equal(sails.sounding.request.transport, 'virtual')
   assert.equal(sails.hooks.sounding.boot, sails.sounding.boot)
   assert.equal(sails.sounding.datastore.identity, 'default')
+})
+
+test('the hook stays disabled in production by default', async () => {
+  const sails = {
+    config: {
+      environment: 'production',
+      sounding: {},
+    },
+    hooks: {},
+    models: {},
+    helpers: {},
+  }
+
+  const hook = soundingHook(sails)
+  hook.configure()
+
+  await new Promise((resolve, reject) => {
+    hook.initialize((error) => {
+      if (error) {
+        reject(error)
+        return
+      }
+      resolve()
+    })
+  })
+
+  assert.equal(sails.sounding, undefined)
+  assert.equal(sails.hooks.sounding, undefined)
+  assert.equal(typeof hook.boot, 'undefined')
+})
+
+test('the hook can be enabled explicitly in production-like environments', async () => {
+  const sails = {
+    config: {
+      environment: 'production',
+      datastores: {
+        default: {
+          adapter: 'sails-sqlite',
+          url: '.tmp/test.db',
+        },
+      },
+      sounding: {
+        enableInProduction: true,
+      },
+    },
+    hooks: {},
+    models: {},
+    helpers: {},
+  }
+
+  const hook = soundingHook(sails)
+  hook.configure()
+
+  await new Promise((resolve, reject) => {
+    hook.initialize((error) => {
+      if (error) {
+        reject(error)
+        return
+      }
+      resolve()
+    })
+  })
+
+  assert.ok(sails.sounding)
+  assert.ok(sails.hooks.sounding)
+  assert.equal(typeof hook.boot, 'function')
 })
