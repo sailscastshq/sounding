@@ -29,6 +29,7 @@ Typical triggers:
   - `auth.request.withPassword(...)`
   - `login.withPassword(...)`
   - `login.as(...)`
+- Treat hook activation as explicit and test-first. By default, Sounding only enables its Sails hook in the environments listed under `sounding.environments`, which starts as `['test']`.
 - Use the app's real auth flow when auth behavior matters. If `/login` or `/magic-link` is the behavior, do not replace it with fake session plumbing.
 - Use `request` for JSON and endpoint behavior, `visit()` for Inertia contracts, and browser trials only when the DOM or navigation is the behavior under test.
 - Treat worlds and actors as product language, not just setup helpers.

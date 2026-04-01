@@ -14,12 +14,22 @@ const { createExpect } = require('./lib/create-expect')
 const { createTestApi } = require('./lib/create-test-api')
 const { getDefaultConfig } = require('./lib/default-config')
 
-function isProductionEnvironment(sails) {
-  return (sails.config?.environment || process.env.NODE_ENV) === 'production'
+function getCurrentEnvironment(sails) {
+  return sails.config?.environment || process.env.NODE_ENV
+}
+
+function getEnabledEnvironments(sails) {
+  const configured = sails.config?.sounding?.environments
+
+  if (Array.isArray(configured)) {
+    return configured
+  }
+
+  return getDefaultConfig().environments
 }
 
 function shouldEnableHook(sails) {
-  return sails.config?.sounding?.enableInProduction === true || !isProductionEnvironment(sails)
+  return getEnabledEnvironments(sails).includes(getCurrentEnvironment(sails))
 }
 
 function soundingHook(sails) {
@@ -27,6 +37,7 @@ function soundingHook(sails) {
 
   return {
     defaults: {
+      // Hook defaults live under `sails.config.sounding`.
       sounding: getDefaultConfig(),
     },
 
