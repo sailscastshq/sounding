@@ -28,14 +28,25 @@ Sounding also owns its own built-in world engine, so the same package can:
 - capture outgoing mail by wrapping `sails.helpers.mail.send` and storing normalized messages in `sails.sounding.mailbox`
 
 The default configuration story is intentionally calm:
-- Sounding disables its hook automatically when Sails runs in `production`
-- set `sounding.enableInProduction = true` only for controlled production-like environments such as staging
+- Sounding only enables its hook in the environments listed under `sounding.environments`
+- the default is `['test']`, so non-test boot paths stay dark unless you opt in explicitly
+- if you intentionally need Sounding in another environment, add that environment name to the list
 - auth conventions auto-detect `User`/`userId` and `Creator`/`creatorId`, with `sounding.auth` available for overrides
 - Sounding manages a temporary `sails-sqlite` datastore by default
 - managed SQLite artifacts live under `.tmp/db`
 - the default datastore identity is `default`
 - browser projects start with `desktop`
 - `inherit` remains available when an app already has a serious test datastore story
+
+For example:
+
+```js
+module.exports.sounding = {
+  environments: ['test'],
+}
+```
+
+If you intentionally want Sounding during another boot path, widen the list explicitly, for example `['test', 'console']` or `['test', 'production']`.
 
 This repository starts with docs-driven product research and the first hook/runtime scaffolding for that vision.
 
