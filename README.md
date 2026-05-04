@@ -36,6 +36,8 @@ The default configuration story is intentionally calm:
 - managed SQLite artifacts live under `.tmp/db`
 - the default datastore identity is `default`
 - browser projects start with `desktop`
+- mail capture previews use the `mail` layout by default, matching the current `sails-hook-mail` convention
+- apps with a different mail layout can set `sounding.mail.layout`, for example `layout-email`
 - `inherit` remains available when an app already has a serious test datastore story
 
 For example:

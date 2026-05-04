@@ -11,6 +11,7 @@ function createRenderView(htmlBuilder) {
 }
 
 test('buildCapturedMail renders the email preview and extracts links', async () => {
+  let previewLayout
   const sails = {
     config: {
       mail: {
@@ -28,6 +29,7 @@ test('buildCapturedMail renders the email preview and extracts links', async () 
       },
     },
     renderView: createRenderView((_viewPath, locals) => {
+      previewLayout = locals.layout
       return `<a href="${locals.magicLink}">Sign in</a>`
     }),
   }
@@ -50,6 +52,53 @@ test('buildCapturedMail renders the email preview and extracts links', async () 
   assert.equal(message.replyTo, 'support@africanengineer.com')
   assert.equal(message.ctaUrl, 'https://example.com/magic-link/token-123')
   assert.deepEqual(message.links, ['https://example.com/magic-link/token-123'])
+  assert.equal(message.layout, 'mail')
+  assert.equal(previewLayout, '../layouts/mail')
+})
+
+test('buildCapturedMail honors the configured preview layout for compatibility', async () => {
+  let previewLayout
+  const sails = {
+    config: {
+      sounding: {
+        mail: {
+          layout: 'layout-email',
+        },
+      },
+    },
+    renderView: createRenderView((_viewPath, locals) => {
+      previewLayout = locals.layout
+      return '<p>Hello</p>'
+    }),
+  }
+
+  const message = await buildCapturedMail(sails, {
+    template: 'reset-password',
+    to: 'reader@example.com',
+  })
+
+  assert.equal(message.layout, 'layout-email')
+  assert.equal(previewLayout, '../layouts/layout-email')
+})
+
+test('buildCapturedMail keeps explicit layout overrides in preview metadata', async () => {
+  let previewLayout
+  const sails = {
+    config: {},
+    renderView: createRenderView((_viewPath, locals) => {
+      previewLayout = locals.layout
+      return '<p>Hello</p>'
+    }),
+  }
+
+  const message = await buildCapturedMail(sails, {
+    template: 'reset-password',
+    to: 'reader@example.com',
+    layout: false,
+  })
+
+  assert.equal(message.layout, false)
+  assert.equal(previewLayout, false)
 })
 
 test('runtime boot installs in-memory mail capture and lower restores the original helper', async () => {
@@ -111,11 +160,58 @@ test('runtime boot installs in-memory mail capture and lower restores the origin
   assert.equal(runtime.mailbox.latest().status, 'sent')
   assert.equal(runtime.mailbox.latest().subject, 'Sign in')
   assert.equal(runtime.mailbox.latest().ctaUrl, 'https://example.com/magic-link/kelvin')
+  assert.equal(runtime.mailbox.latest().layout, 'mail')
 
   await runtime.lower()
 
   assert.equal(sails.helpers.mail.send, originalSend)
   assert.equal(runtime.mailbox.all().length, 0)
+})
+
+test('runtime mail capture honors sounding mail layout config', async () => {
+  let previewLayout
+  const originalSend = async () => ({})
+  originalSend.with = async () => ({})
+
+  const sails = {
+    config: {
+      sounding: {
+        mail: {
+          layout: 'layout-email',
+        },
+      },
+      datastores: {
+        default: {
+          adapter: 'sails-sqlite',
+          url: '.tmp/test.db',
+        },
+      },
+    },
+    models: {},
+    helpers: {
+      mail: {
+        send: originalSend,
+      },
+    },
+    renderView: createRenderView((_viewPath, locals) => {
+      previewLayout = locals.layout
+      return '<p>Hello</p>'
+    }),
+  }
+
+  const runtime = createRuntime(sails)
+  await runtime.boot({ mode: 'trial' })
+
+  await sails.helpers.mail.send.with({
+    template: 'reset-password',
+    to: 'reader@example.com',
+    subject: 'Reset your password',
+  })
+
+  assert.equal(runtime.mailbox.latest().layout, 'layout-email')
+  assert.equal(previewLayout, '../layouts/layout-email')
+
+  await runtime.lower()
 })
 
 test('runtime can capture failed mail sends when passthrough delivery is enabled', async () => {
