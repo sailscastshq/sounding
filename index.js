@@ -14,10 +14,21 @@ const { createExpect } = require('./lib/create-expect')
 const { createTestApi } = require('./lib/create-test-api')
 const { getDefaultConfig } = require('./lib/default-config')
 
+/** @typedef {import('./lib/types').SoundingSailsApp} SoundingSailsApp */
+/** @typedef {import('./lib/types').SoundingSailsHook} SoundingSailsHook */
+
+/**
+ * @param {SoundingSailsApp} sails
+ * @returns {string | undefined}
+ */
 function getCurrentEnvironment(sails) {
   return sails.config?.environment || process.env.NODE_ENV
 }
 
+/**
+ * @param {SoundingSailsApp} sails
+ * @returns {string[]}
+ */
 function getEnabledEnvironments(sails) {
   const configured = sails.config?.sounding?.environments
 
@@ -28,10 +39,20 @@ function getEnabledEnvironments(sails) {
   return getDefaultConfig().environments
 }
 
+/**
+ * @param {SoundingSailsApp} sails
+ * @returns {boolean}
+ */
 function shouldEnableHook(sails) {
   return getEnabledEnvironments(sails).includes(getCurrentEnvironment(sails))
 }
 
+/**
+ * Sails hook factory.
+ *
+ * @param {SoundingSailsApp} sails
+ * @returns {SoundingSailsHook}
+ */
 function soundingHook(sails) {
   const runtime = createRuntime(sails)
 
