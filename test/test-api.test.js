@@ -213,6 +213,114 @@ test('test() can override transport for the whole trial', async () => {
   ])
 })
 
+test('test.only() runs focused trials through the Sounding wrapper', async () => {
+  const calls = []
+  const baseRegistrations = []
+  const onlyRegistrations = []
+  const runtime = {
+    helpers: {},
+    world: {
+      use: async () => ({}),
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+      using(transport) {
+        calls.push(['using', transport])
+        return {
+          transport,
+          get: async () => ({
+            status: 200,
+            data: { transport },
+            header: () => null,
+          }),
+        }
+      },
+      get: async () => ({
+        status: 200,
+        data: { transport: 'virtual' },
+        header: () => null,
+      }),
+    },
+    visit: {
+      transport: 'virtual',
+      using(transport) {
+        calls.push(['visit:using', transport])
+        return {
+          transport,
+        }
+      },
+    },
+    browser: {
+      async open(options) {
+        calls.push(['browser:open', options])
+        return {
+          browser: { name: 'browser' },
+          context: { name: 'context' },
+          page: { name: 'page' },
+        }
+      },
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+
+  const baseTest = (title, options, handler) => {
+    baseRegistrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.only = (title, options, handler) => {
+    onlyRegistrations.push({ title, options, handler })
+    return { title, only: true }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest.only(
+    'focused http browser trial',
+    { transport: 'http', browser: { project: 'desktop' }, timeout: 500 },
+    async ({ sails, get, request, visit, page, expect }) => {
+      const response = await get('/health')
+
+      expect(response).toHaveStatus(200)
+      expect(response).toHaveJsonPath('transport', 'http')
+      assert.equal(sails.sounding, runtime)
+      assert.equal(request.transport, 'http')
+      assert.equal(visit.transport, 'http')
+      assert.deepEqual(page, { name: 'page' })
+    }
+  )
+
+  assert.equal(baseRegistrations.length, 0)
+  assert.equal(onlyRegistrations.length, 1)
+  assert.deepEqual(onlyRegistrations[0].options, {
+    concurrency: false,
+    timeout: 500,
+  })
+
+  await onlyRegistrations[0].handler({})
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['using', 'http'],
+    ['visit:using', 'http'],
+    ['browser:open', { project: 'desktop' }],
+    ['lower'],
+  ])
+})
+
 
 test('test() exposes visit for Inertia-style trials', async () => {
   const calls = []
