@@ -209,6 +209,63 @@ test('auth.request.withPassword preserves creator sessions through the shared re
   assert.equal(calls[1].session.creatorId, 9)
 })
 
+test('createRequestClient.clearSession clears virtual session state from the shared request client', async () => {
+  const sails = {
+    router: {
+      route(req, res) {
+        if (req.method === 'POST' && req.url === '/login') {
+          req.session.userId = 7
+          res._clientRes.statusCode = 302
+          res._clientRes.headers = {
+            location: '/dashboard',
+          }
+          res._clientRes.end('')
+          return
+        }
+
+        if (req.method === 'GET' && req.url === '/dashboard') {
+          res._clientRes.statusCode = 200
+          res._clientRes.headers = {
+            'content-type': 'application/json',
+          }
+          res._clientRes.end(
+            JSON.stringify({
+              userId: req.session.userId || null,
+            })
+          )
+          return
+        }
+
+        res._clientRes.statusCode = 404
+        res._clientRes.end('')
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+
+  const request = createRequestClient({ sails })
+  await request.post('/login', {
+    email: 'reader@example.com',
+    password: 'secret123',
+  })
+
+  let response = await request.get('/dashboard')
+  createExpect(response).toHaveJsonPath('userId', 7)
+
+  request.clearSession()
+
+  response = await request.get('/dashboard')
+  createExpect(response).toHaveJsonPath('userId', null)
+
+  response = await request.withSession({ userId: 11 }).get('/dashboard')
+  createExpect(response).toHaveJsonPath('userId', 11)
+
+  response = await request.get('/dashboard')
+  createExpect(response).toHaveJsonPath('userId', null)
+})
+
 test('createRequestClient normalizes non-2xx virtual responses without rejecting', async () => {
   const sails = {
     router: {
