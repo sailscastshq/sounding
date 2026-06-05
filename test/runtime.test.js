@@ -113,6 +113,69 @@ test('createRuntime manages a temporary datastore by default', async () => {
   assert.equal(runtime.world.factories.length, 0)
 })
 
+test('createRuntime.lower resets shared virtual request session state', async () => {
+  const sails = {
+    config: {
+      datastores: {
+        default: {
+          adapter: 'sails-sqlite',
+          url: '.tmp/test.db',
+        },
+      },
+    },
+    models: {},
+    helpers: {},
+    router: {
+      route(req, res) {
+        if (req.method === 'POST' && req.url === '/login') {
+          req.session.userId = 7
+          res._clientRes.statusCode = 302
+          res._clientRes.headers = {
+            location: '/dashboard',
+          }
+          res._clientRes.end('')
+          return
+        }
+
+        if (req.method === 'GET' && req.url === '/dashboard') {
+          res._clientRes.statusCode = 200
+          res._clientRes.headers = {
+            'content-type': 'application/json',
+          }
+          res._clientRes.end(
+            JSON.stringify({
+              userId: req.session.userId || null,
+            })
+          )
+          return
+        }
+
+        res._clientRes.statusCode = 404
+        res._clientRes.end('')
+      },
+    },
+  }
+
+  const runtime = createRuntime(sails)
+
+  await runtime.boot()
+  await runtime.request.post('/login', {
+    email: 'reader@example.com',
+    password: 'secret123',
+  })
+
+  let response = await runtime.request.get('/dashboard')
+  assert.deepEqual(await response.json(), { userId: 7 })
+
+  await runtime.lower()
+  await runtime.boot()
+
+  response = await runtime.request.get('/dashboard')
+  assert.deepEqual(await response.json(), { userId: null })
+
+  await runtime.lower()
+})
+
 test('createRuntime can switch to an inherited datastore explicitly', async () => {
   const sails = {
     config: {
