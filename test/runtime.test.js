@@ -6,6 +6,31 @@ const { createRuntime, resolveConfig } = require('../lib/create-runtime')
 const { getDefaultConfig } = require('../lib/default-config')
 const { buildManagedSqlitePath } = require('../lib/resolve-datastore')
 
+function createMailSend() {
+  const send = async () => ({})
+  send.with = async () => ({})
+  return send
+}
+
+function createMailEnabledSails(send) {
+  return {
+    config: {
+      datastores: {
+        default: {
+          adapter: 'sails-sqlite',
+          url: '.tmp/test.db',
+        },
+      },
+    },
+    models: {},
+    helpers: {
+      mail: {
+        send,
+      },
+    },
+  }
+}
+
 test('Sounding resolves calm Sails-native defaults', () => {
   const config = resolveConfig({ config: {} })
 
@@ -174,6 +199,88 @@ test('createRuntime.lower resets shared virtual request session state', async ()
   assert.deepEqual(await response.json(), { userId: null })
 
   await runtime.lower()
+})
+
+test('createRuntime.lower continues cleanup and reports browser close failures', async () => {
+  const originalSend = createMailSend()
+  const sails = createMailEnabledSails(originalSend)
+  const runtime = createRuntime(sails)
+  await runtime.boot()
+
+  assert.notEqual(sails.helpers.mail.send, originalSend)
+
+  runtime.mailbox.capture({ to: ['reader@example.com'], subject: 'Sign in' })
+  runtime.world.defineFactory('user', () => ({
+    email: 'reader@example.com',
+  }))
+  runtime.browser.close = async () => {
+    throw new Error('browser close failed')
+  }
+
+  let cleanupError
+  await assert.rejects(
+    async () => {
+      await runtime.lower()
+    },
+    (error) => {
+      cleanupError = error
+      return error instanceof AggregateError && error.message === 'Sounding cleanup failed for browser.'
+    }
+  )
+
+  assert.equal(cleanupError.errors[0].message, 'browser: browser close failed')
+  assert.equal(sails.helpers.mail.send, originalSend)
+  assert.equal(runtime.mailbox.all().length, 0)
+  assert.equal(runtime.world.factories.length, 0)
+  assert.equal(runtime.state, null)
+})
+
+test('createRuntime.lower continues cleanup and reports mail capture uninstall failures', async () => {
+  const originalSend = createMailSend()
+  const sails = createMailEnabledSails(originalSend)
+  const runtime = createRuntime(sails)
+  await runtime.boot()
+
+  const wrappedSend = sails.helpers.mail.send
+  Object.defineProperty(sails.helpers.mail, 'send', {
+    configurable: true,
+    get() {
+      return wrappedSend
+    },
+    set() {
+      throw new Error('mail restore failed')
+    },
+  })
+
+  let browserClosed = false
+  runtime.browser.close = async () => {
+    browserClosed = true
+  }
+
+  runtime.mailbox.capture({ to: ['reader@example.com'], subject: 'Sign in' })
+  runtime.world.defineFactory('user', () => ({
+    email: 'reader@example.com',
+  }))
+
+  let cleanupError
+  await assert.rejects(
+    async () => {
+      await runtime.lower()
+    },
+    (error) => {
+      cleanupError = error
+      return (
+        error instanceof AggregateError &&
+        error.message === 'Sounding cleanup failed for mail capture.'
+      )
+    }
+  )
+
+  assert.equal(cleanupError.errors[0].message, 'mail capture: mail restore failed')
+  assert.equal(browserClosed, true)
+  assert.equal(runtime.mailbox.all().length, 0)
+  assert.equal(runtime.world.factories.length, 0)
+  assert.equal(runtime.state, null)
 })
 
 test('createRuntime can switch to an inherited datastore explicitly', async () => {
