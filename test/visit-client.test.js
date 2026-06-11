@@ -193,6 +193,11 @@ test('createVisitClient requires a component for partial reload selectors', asyn
     async () => {
       await visit('/dashboard', { only: ['notifications'] })
     },
-    /requires `component` when using `only`/
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_VISIT_COMPONENT_REQUIRED')
+      assert.equal(error.partialReload, 'only')
+      assert.match(error.message, /requires `component` when using `only`/)
+      return true
+    }
   )
 })

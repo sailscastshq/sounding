@@ -473,6 +473,76 @@ test('createRequestClient rejects invalid HTTP JSON with response context', asyn
   }
 })
 
+test('createRequestClient reports missing virtual transport with a stable code', async () => {
+  const request = createRequestClient({
+    sails: {
+      config: {
+        sounding: {},
+      },
+    },
+  })
+
+  await assert.rejects(
+    async () => {
+      await request.get('/health')
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_VIRTUAL_TRANSPORT_UNAVAILABLE')
+      assert.match(error.message, /sails\.router\.route/)
+      return true
+    }
+  )
+})
+
+test('createRequestClient reports unresolved HTTP base URL with a stable code', async () => {
+  const request = createRequestClient({
+    sails: {
+      config: {
+        sounding: {
+          request: {
+            transport: 'http',
+          },
+        },
+      },
+    },
+  })
+
+  await assert.rejects(
+    async () => {
+      await request.get('/health')
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_BASE_URL_UNRESOLVED')
+      assert.match(error.message, /could not resolve a base URL/)
+      return true
+    }
+  )
+})
+
+test('createRequestClient reports unknown transports with a stable code', async () => {
+  const request = createRequestClient({
+    sails: {
+      config: {
+        sounding: {},
+      },
+    },
+  }).using('custom-transport')
+
+  await assert.rejects(
+    async () => {
+      await request.get('/health')
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_UNKNOWN_TRANSPORT')
+      assert.equal(error.transport, 'custom-transport')
+      assert.deepEqual(error.details, {
+        transport: 'custom-transport',
+      })
+      return true
+    }
+  )
+})
+
 test('createRequestClient can follow the Sails-native redirect matcher contract over virtual transport', async () => {
   const sails = {
     router: {
