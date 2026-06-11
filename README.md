@@ -20,6 +20,7 @@ The canonical Sails-native surface is:
 - virtual request responses expose the final `req.session` snapshot as `response.session`; HTTP responses leave it undefined
 - request assertions can check auth/session state with `expect(response).toHaveSession('userId', user.id)` and flash messages with `expect(response).toHaveFlash('info', /welcome/i)`
 - Inertia-style visits can use `visit('/pricing')` and partial reload options like `{ component, only }`
+- mail assertions can check captured emails with `expect(mailbox).toHaveSentMail({ to, subject })` and `expect(mailbox.latest()).toHaveCtaUrl(/magic-link/)`
 - a trial can opt into stricter parity with `test('...', { transport: 'http' }, ...)`
 - any trial can also scope a request client with `sails.sounding.request.using('http')`
 

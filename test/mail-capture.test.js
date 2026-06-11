@@ -3,6 +3,7 @@ const assert = require('node:assert/strict')
 
 const { createRuntime } = require('../lib/create-runtime')
 const { buildCapturedMail, createMailCapture } = require('../lib/create-mail-capture')
+const { createExpect } = require('../lib/create-expect')
 
 function createRenderView(htmlBuilder) {
   return (viewPath, locals) => ({
@@ -54,6 +55,8 @@ test('buildCapturedMail renders the email preview and extracts links', async () 
   assert.deepEqual(message.links, ['https://example.com/magic-link/token-123'])
   assert.equal(message.layout, 'mail')
   assert.equal(previewLayout, '../layouts/mail')
+  createExpect(message).toHaveCtaUrl(/magic-link\/token-123/)
+  createExpect(message).not.toHaveCtaUrl(/reset-password/)
 })
 
 test('buildCapturedMail honors the configured preview layout for compatibility', async () => {
@@ -202,6 +205,33 @@ test('runtime boot installs in-memory mail capture and lower restores the origin
   assert.equal(runtime.mailbox.latest().subject, 'Sign in')
   assert.equal(runtime.mailbox.latest().ctaUrl, 'https://example.com/magic-link/kelvin')
   assert.equal(runtime.mailbox.latest().layout, 'mail')
+  createExpect(runtime.mailbox).toHaveSentCount(1)
+  createExpect(runtime.mailbox).toHaveSentMail({
+    to: 'reader@example.com',
+    subject: /sign in/i,
+    template: 'email-magic-link',
+    status: 'sent',
+    ctaUrl: /magic-link\/kelvin$/,
+    templateData: {
+      magicLink: /magic-link\/kelvin$/,
+    },
+  })
+  createExpect(runtime.mailbox.latest()).toHaveCtaUrl(/magic-link/)
+  createExpect(runtime.mailbox).not.toHaveSentMail({ subject: /reset password/i })
+
+  assert.throws(
+    () => {
+      createExpect(runtime.mailbox).toHaveSentMail({
+        to: 'missing@example.com',
+      })
+    },
+    (error) => {
+      assert.match(error.message, /missing@example\.com/)
+      assert.match(error.message, /reader@example\.com/)
+      assert.match(error.message, /Sign in/)
+      return true
+    }
+  )
 
   await runtime.lower()
 
@@ -310,6 +340,12 @@ test('runtime can capture failed mail sends when passthrough delivery is enabled
   assert.equal(runtime.mailbox.latest().status, 'failed')
   assert.equal(runtime.mailbox.latest().subject, 'Sign in')
   assert.equal(runtime.mailbox.latest().error.message, 'SMTP is down')
+  createExpect(runtime.mailbox).toHaveSentMail({
+    status: 'failed',
+    error: {
+      message: /SMTP is down/,
+    },
+  })
 
   await runtime.lower()
 })
