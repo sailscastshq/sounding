@@ -79,6 +79,29 @@ test('resolveConfig names invalid browser fields precisely', () => {
   )
 })
 
+test('resolveConfig validates websocket helper options precisely', () => {
+  assert.throws(
+    () => {
+      resolveConfig({
+        config: {
+          sounding: {
+            sockets: {
+              timeout: 'soon',
+            },
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_CONFIG_INVALID')
+      assert.equal(error.path, 'sounding.sockets.timeout')
+      assert.equal(error.value, 'soon')
+      assert.match(error.message, /positive number/)
+      return true
+    }
+  )
+})
+
 test('resolveConfig suggests nearby option names for misspelled config keys', () => {
   assert.throws(
     () => {

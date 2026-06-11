@@ -213,6 +213,82 @@ test('test() can override transport for the whole trial', async () => {
   ])
 })
 
+test('test() exposes socket helpers for socket-capable trials', async () => {
+  const calls = []
+  const baseRegistrations = []
+  const runtime = {
+    helpers: {},
+    world: {
+      use: async () => ({}),
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+    },
+    visit: {
+      transport: 'virtual',
+    },
+    sockets: {
+      connect(options) {
+        calls.push(['socket:connect', options])
+        return Promise.resolve({ connected: true })
+      },
+      as(actor) {
+        calls.push(['socket:as', actor])
+        return {
+          connect(options) {
+            calls.push(['socket:as:connect', options])
+            return Promise.resolve({ actor, connected: true })
+          },
+        }
+      },
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+
+  const baseTest = (title, options, handler) => {
+    baseRegistrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest(
+    'chat room accepts websocket members',
+    { socket: { timeout: 250 } },
+    async ({ sockets }) => {
+      const guest = await sockets.connect()
+      const member = await sockets.as({ id: 7 }).connect({ path: '/socket.io' })
+
+      assert.equal(guest.connected, true)
+      assert.equal(member.actor.id, 7)
+    }
+  )
+
+  await baseRegistrations[0].handler({})
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['socket:connect', { timeout: 250 }],
+    ['socket:as', { id: 7 }],
+    ['socket:as:connect', { timeout: 250, path: '/socket.io' }],
+    ['lower'],
+  ])
+})
+
 test('test.only() runs focused trials through the Sounding wrapper', async () => {
   const calls = []
   const baseRegistrations = []
@@ -396,6 +472,19 @@ test('test() reports malformed trial arguments with stable codes', () => {
       assert.equal(error.path, 'options.browser')
       assert.equal(error.value, 'mobile')
       assert.match(error.suggestion, /browser: true/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest('bad socket', { socket: 'realtime' }, async () => {})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.socket')
+      assert.equal(error.value, 'realtime')
+      assert.match(error.suggestion, /socket: true/)
       return true
     }
   )
