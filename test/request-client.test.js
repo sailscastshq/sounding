@@ -138,6 +138,11 @@ test('createRequestClient exposes final virtual session snapshots on responses',
   assert.equal(login.session.userId, 7)
   assert.equal(login.session.returnTo, '/dashboard')
   assert.deepEqual(login.session.__soundingFlashStore.success, ['Welcome back'])
+  createExpect(login).toHaveSession('userId', 7)
+  createExpect(login).toHaveSession('returnTo', '/dashboard')
+  createExpect(login).toHaveFlash('success', /welcome/i)
+  createExpect(login).not.toHaveSession('loggedOut')
+  createExpect(login).not.toHaveFlash('error')
 
   const originalLoginSnapshot = login.session
   const logout = await request.post('/logout')
@@ -148,6 +153,9 @@ test('createRequestClient exposes final virtual session snapshots on responses',
   assert.notEqual(logout.session, originalLoginSnapshot)
   assert.equal(login.session.userId, 7)
   assert.equal(login.session.loggedOut, undefined)
+  createExpect(logout).not.toHaveSession('userId')
+  createExpect(logout).toHaveSession('loggedOut', true)
+  createExpect(logout).not.toHaveFlash('success', /signed in/i)
 })
 
 test('createRequestClient.as uses creatorId when Creator auth is detected', async () => {
@@ -262,6 +270,7 @@ test('auth.request.withPassword preserves creator sessions through the shared re
 
   createExpect(login.response).toHaveStatus(302)
   createExpect(login.response).toRedirectTo('/invoices')
+  createExpect(login.response).toHaveSession('creatorId', 9)
   createExpect(response).toHaveStatus(200)
   createExpect(response).toHaveJsonPath('creatorId', 9)
   assert.deepEqual(calls[0].body, {
@@ -661,6 +670,17 @@ test('createRequestClient can use explicit HTTP transport when parity matters mo
     createExpect(response).toHaveStatus(200)
     createExpect(response).toHaveJsonPath('ok', true)
     assert.equal(response.session, undefined)
+    assert.throws(
+      () => {
+        createExpect(response).toHaveSession('userId')
+      },
+      (error) => {
+        assert.equal(error.code, 'E_SOUNDING_RESPONSE_SESSION_UNAVAILABLE')
+        assert.match(error.message, /virtual request response/)
+        assert.match(error.message, /HTTP responses/)
+        return true
+      }
+    )
     assert.deepEqual(await response.json(), { ok: true })
   } finally {
     await close(server)
