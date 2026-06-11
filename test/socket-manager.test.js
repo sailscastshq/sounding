@@ -51,6 +51,12 @@ test('createSocketManager exercises Sails socket requests and room broadcasts', 
 
   const health = await member.get('/api/socket-health')
   assert.equal(health.status, 200)
+  assert.deepEqual(health.request, {
+    method: 'GET',
+    target: '/api/socket-health',
+    transport: 'socket',
+    url: '/api/socket-health',
+  })
   assert.equal(health.data.ok, true)
   assert.equal(health.data.isSocket, true)
   assert.equal(health.data.socketId, member.id)

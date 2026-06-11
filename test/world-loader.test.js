@@ -49,6 +49,10 @@ test('loadWorldFiles discovers factory and scenario definitions from tests/', as
 
 test('createWorldEngine reports unknown world entries with stable codes', async () => {
   const world = createWorldEngine({ sails: {} })
+  world.defineFactory('account', {
+    name: 'Acme',
+  })
+  world.defineScenario('signed-in-user', async () => ({}))
 
   assert.throws(
     () => {
@@ -57,12 +61,16 @@ test('createWorldEngine reports unknown world entries with stable codes', async 
     (error) => {
       assert.equal(error.code, 'E_SOUNDING_WORLD_FACTORY_UNKNOWN')
       assert.equal(error.factory, 'user')
+      assert.deepEqual(error.availableFactories, ['account'])
+      assert.match(error.message, /Available factories: account/)
       return true
     }
   )
 
   world.defineFactory('user', {
     email: 'reader@example.com',
+  }).trait('verified', {
+    verified: true,
   })
 
   assert.throws(
@@ -73,6 +81,8 @@ test('createWorldEngine reports unknown world entries with stable codes', async 
       assert.equal(error.code, 'E_SOUNDING_WORLD_TRAIT_UNKNOWN')
       assert.equal(error.factory, 'user')
       assert.equal(error.trait, 'admin')
+      assert.deepEqual(error.availableTraits, ['verified'])
+      assert.match(error.message, /Available traits for `user`: verified/)
       return true
     }
   )
@@ -84,6 +94,8 @@ test('createWorldEngine reports unknown world entries with stable codes', async 
     (error) => {
       assert.equal(error.code, 'E_SOUNDING_WORLD_SCENARIO_UNKNOWN')
       assert.equal(error.scenario, 'missing-dashboard')
+      assert.deepEqual(error.availableScenarios, ['signed-in-user'])
+      assert.match(error.message, /Available scenarios: signed-in-user/)
       return true
     }
   )

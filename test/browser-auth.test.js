@@ -248,6 +248,49 @@ test('createAuthHelpers reports auth input errors with stable codes', async () =
   )
 })
 
+test('createAuthHelpers lists available world actors for unresolved aliases', async () => {
+  const auth = createAuthHelpers({
+    sails: {},
+    world: {
+      current: {
+        users: {
+          reader: {
+            id: 1,
+            email: 'reader@example.com',
+          },
+        },
+        creators: {
+          owner: {
+            id: 2,
+            email: 'owner@example.com',
+          },
+        },
+      },
+    },
+    mailbox: {
+      latest() {
+        return null
+      },
+    },
+    request: {
+      post: async () => ({ status: 302 }),
+    },
+  })
+
+  await assert.rejects(
+    async () => {
+      await auth.resolveActor('editor', { createIfMissing: false })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_AUTH_EMAIL_UNRESOLVED')
+      assert.equal(error.actor, 'editor')
+      assert.deepEqual(error.availableActors, ['owner', 'reader'])
+      assert.match(error.message, /Available actors: owner, reader/)
+      return true
+    }
+  )
+})
+
 test('createAuthHelpers can log in with password through the real browser form', async () => {
   const calls = []
   const page = {
