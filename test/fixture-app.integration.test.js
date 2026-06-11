@@ -91,6 +91,10 @@ test('createAppManager exercises a real Sails fixture app through the Sounding r
   assert.equal(actorResponse.status, 200)
   assert.equal(actorResponse.data.email, world.users.member.email)
 
+  const aliasResponse = await booted.request.as('member').get('/me')
+  assert.equal(aliasResponse.status, 200)
+  assert.equal(aliasResponse.data.email, world.users.member.email)
+
   const helperResult = await booted.helpers.sendWelcomeEmail({
     email: 'ada@example.com',
   })

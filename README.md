@@ -16,6 +16,7 @@ The canonical Sails-native surface is:
 - `get('/api/issues')` or `sails.sounding.request.get('/api/issues')` inside endpoint-style trials
 - `await auth.login.withPassword('creator@example.com', page, { password: 'secret123' })` inside browser trials
 - `await auth.request.withPassword('creator@example.com', { password: 'secret123' })` inside request trials
+- `request.as('owner')` and `visit.as('owner')` can resolve actor aliases from the current world
 - request helpers default to Sails virtual requests powered by `sails.request()`
 - virtual request responses expose the final `req.session` snapshot as `response.session`; HTTP responses leave it undefined
 - request assertions can check auth/session state with `expect(response).toHaveSession('userId', user.id)` and flash messages with `expect(response).toHaveFlash('info', /welcome/i)`
