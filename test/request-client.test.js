@@ -66,9 +66,104 @@ test('createRequestClient defaults to the Sails-native virtual transport', async
   assert.equal(calls[0].data, undefined)
   assert.deepEqual(calls[0].session.__soundingFlashStore, {})
   assert.equal(typeof calls[0].flash, 'function')
+  assert.deepEqual(response.request, {
+    method: 'GET',
+    target: '/health',
+    transport: 'virtual',
+    url: '/health',
+  })
   createExpect(response).toHaveStatus(200)
   createExpect(response).toHaveJsonPath('ok', true)
   assert.deepEqual(await response.json(), { ok: true })
+})
+
+test('request assertion failures include concise response diagnostics', () => {
+  const response = normalizeResponse({
+    raw: {},
+    status: 500,
+    statusText: 'Server Error',
+    headers: {
+      'content-type': 'application/json',
+      'x-request-id': 'req_123',
+    },
+    url: '/health',
+    responseBody: JSON.stringify({
+      message: 'Database unavailable',
+      detail: 'Connection pool exhausted',
+    }),
+    request: {
+      method: 'GET',
+      target: '/health',
+      transport: 'virtual',
+      url: '/health',
+    },
+  })
+
+  assert.throws(
+    () => {
+      createExpect(response).toHaveStatus(200)
+    },
+    (error) => {
+      assert.match(error.message, /Expected response status 200, received 500/)
+      assert.match(error.message, /Request: GET \/health \(virtual\)/)
+      assert.match(error.message, /Response: 500 Server Error/)
+      assert.match(error.message, /Headers: content-type: application\/json, x-request-id: req_123/)
+      assert.match(error.message, /Body: \{"message":"Database unavailable"/)
+      return true
+    }
+  )
+})
+
+test('request diagnostics expand response excerpts when verbose output is enabled', () => {
+  const originalDiagnostics = process.env.SOUNDING_DIAGNOSTICS
+  const longBody = `${'x'.repeat(520)}TAIL`
+  const response = normalizeResponse({
+    raw: {},
+    status: 500,
+    headers: {
+      'content-type': 'text/plain',
+    },
+    url: '/verbose',
+    responseBody: longBody,
+    request: {
+      method: 'GET',
+      target: '/verbose',
+      transport: 'virtual',
+      url: '/verbose',
+    },
+  })
+
+  try {
+    delete process.env.SOUNDING_DIAGNOSTICS
+    assert.throws(
+      () => {
+        createExpect(response).toHaveStatus(200)
+      },
+      (error) => {
+        assert.match(error.message, /Body: x{500}\.\.\./)
+        assert.doesNotMatch(error.message, /TAIL/)
+        return true
+      }
+    )
+
+    process.env.SOUNDING_DIAGNOSTICS = 'verbose'
+    assert.throws(
+      () => {
+        createExpect(response).toHaveStatus(200)
+      },
+      (error) => {
+        assert.match(error.message, /TAIL/)
+        assert.doesNotMatch(error.message, /Body: x{500}\.\.\./)
+        return true
+      }
+    )
+  } finally {
+    if (originalDiagnostics === undefined) {
+      delete process.env.SOUNDING_DIAGNOSTICS
+    } else {
+      process.env.SOUNDING_DIAGNOSTICS = originalDiagnostics
+    }
+  }
 })
 
 test('createRequestClient can attach an actor session for virtual policy checks', async () => {
