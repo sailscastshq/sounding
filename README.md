@@ -17,6 +17,7 @@ The canonical Sails-native surface is:
 - `await auth.login.withPassword('creator@example.com', page, { password: 'secret123' })` inside browser trials
 - `await auth.request.withPassword('creator@example.com', { password: 'secret123' })` inside request trials
 - request helpers default to Sails virtual requests powered by `sails.request()`
+- virtual request responses expose the final `req.session` snapshot as `response.session`; HTTP responses leave it undefined
 - Inertia-style visits can use `visit('/pricing')` and partial reload options like `{ component, only }`
 - a trial can opt into stricter parity with `test('...', { transport: 'http' }, ...)`
 - any trial can also scope a request client with `sails.sounding.request.using('http')`
