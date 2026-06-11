@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const http = require('node:http')
 
-const { createRequestClient } = require('../lib/create-request-client')
+const { createRequestClient, normalizeResponse } = require('../lib/create-request-client')
 const { createAuthHelpers } = require('../lib/create-auth-helpers')
 const { createExpect } = require('../lib/create-expect')
 
@@ -23,6 +23,18 @@ function close(server) {
       resolve()
     })
   })
+}
+
+function assertJsonParseError(error, expected) {
+  assert.equal(error.name, 'SoundingJsonParseError')
+  assert.equal(error.code, 'E_SOUNDING_JSON_PARSE')
+  assert.match(error.message, /Sounding could not parse JSON response/)
+  assert.equal(error.status, expected.status)
+  assert.equal(error.url, expected.url)
+  assert.equal(error.contentType, expected.contentType)
+  assert.equal(error.body, expected.body)
+  assert.ok(error.cause instanceof SyntaxError)
+  return true
 }
 
 test('createRequestClient defaults to the Sails-native virtual transport', async () => {
@@ -287,6 +299,178 @@ test('createRequestClient normalizes non-2xx virtual responses without rejecting
 
   createExpect(response).toHaveStatus(401)
   createExpect(response).toHaveJsonPath('message', 'Unauthorized')
+})
+
+test('normalizeResponse handles JSON, text, and empty response bodies predictably', async () => {
+  const json = normalizeResponse({
+    raw: {},
+    status: 200,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+    },
+    responseBody: JSON.stringify({ ok: true }),
+  })
+
+  assert.equal(json.body, '{"ok":true}')
+  assert.deepEqual(json.data, { ok: true })
+  assert.deepEqual(await json.json(), { ok: true })
+
+  const compatibleJson = normalizeResponse({
+    raw: {},
+    status: 200,
+    headers: {
+      'content-type': 'application/problem+json',
+    },
+    responseBody: '123',
+  })
+
+  assert.equal(compatibleJson.body, '123')
+  assert.equal(compatibleJson.data, 123)
+
+  const text = normalizeResponse({
+    raw: {},
+    status: 200,
+    headers: {
+      'content-type': 'text/plain',
+    },
+    responseBody: 'Hello from Sails',
+  })
+
+  assert.equal(await text.text(), 'Hello from Sails')
+  assert.equal(await text.json(), undefined)
+  assert.equal(text.data, undefined)
+
+  const empty = normalizeResponse({
+    raw: {},
+    status: 204,
+    headers: {
+      'content-type': 'application/json',
+    },
+    responseBody: '',
+  })
+
+  assert.equal(empty.body, '')
+  assert.equal(empty.data, undefined)
+  assert.equal(await empty.json(), undefined)
+})
+
+test('normalizeResponse reports invalid JSON with response context', () => {
+  assert.throws(
+    () => {
+      normalizeResponse({
+        raw: {},
+        status: 200,
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+        },
+        url: '/broken-json',
+        responseBody: '{"ok":',
+      })
+    },
+    (error) =>
+      assertJsonParseError(error, {
+        status: 200,
+        url: '/broken-json',
+        contentType: 'application/json; charset=utf-8',
+        body: '{"ok":',
+      })
+  )
+})
+
+test('createRequestClient parses virtual JSON responses with charset content type', async () => {
+  const sails = {
+    router: {
+      route(_req, res) {
+        res._clientRes.statusCode = 200
+        res._clientRes.headers = {
+          'content-type': 'application/json; charset=utf-8',
+        }
+        res._clientRes.end(JSON.stringify({ ok: true }))
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+
+  const request = createRequestClient({ sails })
+  const response = await request.get('/health')
+
+  assert.equal(response.body, '{"ok":true}')
+  assert.deepEqual(await response.json(), { ok: true })
+  createExpect(response).toHaveJsonPath('ok', true)
+})
+
+test('createRequestClient rejects invalid virtual JSON with response context', async () => {
+  const sails = {
+    router: {
+      route(_req, res) {
+        res._clientRes.statusCode = 200
+        res._clientRes.headers = {
+          'content-type': 'application/json',
+        }
+        res._clientRes.end('{"ok":')
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+
+  const request = createRequestClient({ sails })
+
+  await assert.rejects(
+    async () => {
+      await request.get('/broken-json')
+    },
+    (error) =>
+      assertJsonParseError(error, {
+        status: 200,
+        url: '/broken-json',
+        contentType: 'application/json',
+        body: '{"ok":',
+      })
+  )
+})
+
+test('createRequestClient rejects invalid HTTP JSON with response context', async () => {
+  const server = http.createServer((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
+    res.end('{"ok":')
+  })
+
+  const address = await listen(server)
+  const baseUrl = `http://127.0.0.1:${address.port}`
+
+  try {
+    const request = createRequestClient({
+      sails: {
+        config: {
+          sounding: {
+            request: {
+              transport: 'http',
+              baseUrl,
+            },
+          },
+        },
+      },
+    })
+
+    await assert.rejects(
+      async () => {
+        await request.get('/broken-json')
+      },
+      (error) =>
+        assertJsonParseError(error, {
+          status: 200,
+          url: `${baseUrl}/broken-json`,
+          contentType: 'application/json; charset=utf-8',
+          body: '{"ok":',
+        })
+    )
+  } finally {
+    await close(server)
+  }
 })
 
 test('createRequestClient can follow the Sails-native redirect matcher contract over virtual transport', async () => {
