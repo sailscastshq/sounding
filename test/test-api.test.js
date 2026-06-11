@@ -321,6 +321,142 @@ test('test.only() runs focused trials through the Sounding wrapper', async () =>
   ])
 })
 
+test('test() reports malformed trial arguments with stable codes', () => {
+  const baseRegistrations = []
+  const baseTest = (title, options, handler) => {
+    baseRegistrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest })
+
+  assert.throws(
+    () => {
+      soundingTest()
+    },
+    (error) => {
+      assert.equal(error.name, 'SoundingTestArgumentError')
+      assert.equal(error.code, 'E_SOUNDING_TEST_TITLE_REQUIRED')
+      assert.equal(error.path, 'name')
+      assert.equal(error.signature, 'test(name, [options], handler)')
+      assert.match(error.message, /requires a non-empty trial name/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest('missing handler', { browser: true })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_HANDLER_REQUIRED')
+      assert.equal(error.path, 'handler')
+      assert.equal(error.signature, 'test(name, [options], handler)')
+      assert.match(error.message, /requires a trial handler/)
+      assert.match(error.suggestion, /async function/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest('bad options', 'http', async () => {})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options')
+      assert.equal(error.value, 'http')
+      assert.match(error.message, /options must be an object/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest('bad transport', { transport: 'socket' }, async () => {})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.transport')
+      assert.equal(error.value, 'socket')
+      assert.deepEqual(error.allowed, ['virtual', 'http'])
+      assert.match(error.suggestion, /Use `virtual`/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest('bad browser', { browser: 'mobile' }, async () => {})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.browser')
+      assert.equal(error.value, 'mobile')
+      assert.match(error.suggestion, /browser: true/)
+      return true
+    }
+  )
+
+  assert.equal(baseRegistrations.length, 0)
+})
+
+test('test.only() reports malformed focused trial arguments with stable codes', () => {
+  const onlyRegistrations = []
+  const baseTest = () => {
+    throw new Error('base test should not be used')
+  }
+  baseTest.only = (title, options, handler) => {
+    onlyRegistrations.push({ title, options, handler })
+    return { title, only: true }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest })
+
+  assert.throws(
+    () => {
+      soundingTest.only('focused without handler')
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_HANDLER_REQUIRED')
+      assert.equal(error.api, 'test.only')
+      assert.equal(error.signature, 'test.only(name, [options], handler)')
+      assert.match(error.message, /test\.only/)
+      return true
+    }
+  )
+
+  assert.equal(onlyRegistrations.length, 0)
+})
+
+test('test.skip() and test.todo() preserve Node-compatible pass-through forms', () => {
+  const skipped = []
+  const todos = []
+  const baseTest = () => {
+    throw new Error('base test should not be used')
+  }
+  baseTest.skip = (...args) => {
+    skipped.push(args)
+    return { skipped: true }
+  }
+  baseTest.todo = (...args) => {
+    todos.push(args)
+    return { todo: true }
+  }
+
+  const soundingTest = createTestApi({ baseTest })
+  const skipResult = soundingTest.skip('skip for later')
+  const todoResult = soundingTest.todo('document later')
+
+  assert.deepEqual(skipResult, { skipped: true })
+  assert.deepEqual(todoResult, { todo: true })
+  assert.deepEqual(skipped, [['skip for later']])
+  assert.deepEqual(todos, [['document later']])
+})
 
 test('test() exposes visit for Inertia-style trials', async () => {
   const calls = []
