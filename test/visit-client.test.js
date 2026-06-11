@@ -117,6 +117,50 @@ test('createVisitClient exposes post and transport scoping', async () => {
   assert.deepEqual(calls[3], ['withHeaders:scoped', DEFAULT_HEADERS])
 })
 
+test('createVisitClient can scope visits to actor aliases', async () => {
+  const calls = []
+  const request = {
+    transport: 'virtual',
+    as(actor) {
+      calls.push(['as', actor])
+      return this
+    },
+    withHeaders(headers) {
+      calls.push(['withHeaders', headers])
+      return {
+        transport: 'virtual',
+        get: async (target, options = {}) => {
+          calls.push(['get', target, options])
+          return {
+            status: 200,
+            data: {
+              component: 'dashboard/index',
+              props: {},
+            },
+            header: () => null,
+          }
+        },
+        head: async () => null,
+        post: async () => null,
+        put: async () => null,
+        patch: async () => null,
+        delete: async () => null,
+      }
+    },
+  }
+
+  const visit = createVisitClient({ request })
+  const page = await visit.as('owner')('/dashboard')
+
+  createExpect(page).toBeInertiaPage('dashboard/index')
+  assert.deepEqual(calls, [
+    ['withHeaders', DEFAULT_HEADERS],
+    ['as', 'owner'],
+    ['withHeaders', DEFAULT_HEADERS],
+    ['get', '/dashboard', {}],
+  ])
+})
+
 
 test('createVisitClient can express partial reload headers cleanly', async () => {
   const calls = []

@@ -192,6 +192,164 @@ test('createRequestClient can attach an actor session for virtual policy checks'
   assert.deepEqual(calls[0].session.__soundingFlashStore, {})
 })
 
+test('createRequestClient.as resolves User world actor aliases', async () => {
+  const calls = []
+  const sails = {
+    router: {
+      route(req, res) {
+        calls.push(req)
+        res._clientRes.statusCode = 200
+        res._clientRes.headers = {
+          'content-type': 'application/json',
+        }
+        res._clientRes.end(JSON.stringify({ userId: req.session.userId }))
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+  const world = {
+    current: {
+      users: {
+        owner: {
+          id: 24,
+          email: 'owner@example.com',
+        },
+      },
+    },
+  }
+
+  const request = createRequestClient({ sails, world })
+  const response = await request.as('owner').get('/dashboard')
+
+  assert.equal(calls[0].session.userId, 24)
+  createExpect(response).toHaveJsonPath('userId', 24)
+})
+
+test('createRequestClient.as resolves Creator world actor aliases', async () => {
+  const calls = []
+  const sails = {
+    models: {
+      creator: {},
+    },
+    router: {
+      route(req, res) {
+        calls.push(req)
+        res._clientRes.statusCode = 200
+        res._clientRes.headers = {
+          'content-type': 'application/json',
+        }
+        res._clientRes.end(JSON.stringify({ creatorId: req.session.creatorId }))
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+  const world = {
+    current: {
+      creators: {
+        owner: {
+          id: 9,
+          email: 'creator@example.com',
+        },
+      },
+    },
+  }
+
+  const request = createRequestClient({ sails, world })
+  const response = await request.as('owner').get('/invoices')
+
+  assert.equal(calls[0].session.creatorId, 9)
+  assert.equal(calls[0].session.userId, undefined)
+  createExpect(response).toHaveJsonPath('creatorId', 9)
+})
+
+test('createRequestClient.as resolves email strings through the auth model', async () => {
+  const calls = []
+  const sails = {
+    models: {
+      user: {
+        async findOne(criteria) {
+          if (criteria.email === 'reader@example.com') {
+            return {
+              id: 7,
+              email: 'reader@example.com',
+            }
+          }
+
+          return null
+        },
+      },
+    },
+    router: {
+      route(req, res) {
+        calls.push(req)
+        res._clientRes.statusCode = 200
+        res._clientRes.headers = {
+          'content-type': 'application/json',
+        }
+        res._clientRes.end(JSON.stringify({ userId: req.session.userId }))
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+
+  const request = createRequestClient({ sails })
+  const response = await request.as('reader@example.com').get('/me')
+
+  assert.equal(calls[0].session.userId, 7)
+  createExpect(response).toHaveJsonPath('userId', 7)
+})
+
+test('createRequestClient.as reports unresolved aliases with available world actors', async () => {
+  const sails = {
+    router: {
+      route(_req, res) {
+        res._clientRes.statusCode = 200
+        res._clientRes.end('')
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+  const world = {
+    current: {
+      users: {
+        reader: {
+          id: 7,
+          email: 'reader@example.com',
+        },
+      },
+      creators: {
+        owner: {
+          id: 9,
+          email: 'owner@example.com',
+        },
+      },
+    },
+  }
+
+  const request = createRequestClient({ sails, world })
+
+  await assert.rejects(
+    async () => {
+      await request.as('editor').get('/dashboard')
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_REQUEST_ACTOR_UNRESOLVED')
+      assert.equal(error.actor, 'editor')
+      assert.deepEqual(error.availableActors, ['owner', 'reader'])
+      assert.match(error.message, /Available actors: owner, reader/)
+      return true
+    }
+  )
+})
+
 test('createRequestClient exposes final virtual session snapshots on responses', async () => {
   const sails = {
     router: {
