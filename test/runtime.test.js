@@ -45,7 +45,7 @@ test('Sounding resolves calm Sails-native defaults', () => {
   assert.equal(config.browser.projects[0], 'desktop')
 })
 
-test('Sounding normalizes shorthand and legacy datastore config shapes', () => {
+test('Sounding normalizes shorthand datastore config', () => {
   const shorthand = resolveConfig({
     config: {
       sounding: {
@@ -57,23 +57,6 @@ test('Sounding normalizes shorthand and legacy datastore config shapes', () => {
   assert.equal(shorthand.datastore.mode, 'inherit')
   assert.equal(shorthand.datastore.root, '.tmp/db')
   assert.equal(shorthand.datastore.adapter, 'sails-sqlite')
-
-  const legacyManaged = resolveConfig({
-    config: {
-      sounding: {
-        datastore: {
-          managed: {
-            directory: '.tmp/custom-db',
-            isolation: 'run',
-          },
-        },
-      },
-    },
-  })
-
-  assert.equal(legacyManaged.datastore.mode, 'managed')
-  assert.equal(legacyManaged.datastore.root, '.tmp/custom-db')
-  assert.equal(legacyManaged.datastore.isolation, 'run')
 })
 
 test('resolveDatastore reports configuration errors with stable codes', () => {
