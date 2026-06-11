@@ -17,7 +17,7 @@ test('loadAppSoundingConfig falls back to Sounding defaults when the app has no 
   assert.equal(config.app.environment, 'test')
 })
 
-test('loadAppSoundingConfig normalizes shorthand and legacy datastore config', () => {
+test('loadAppSoundingConfig normalizes shorthand datastore config', () => {
   const shorthandRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-app-config-'))
   fs.mkdirSync(path.join(shorthandRoot, 'config'), { recursive: true })
   fs.writeFileSync(
@@ -28,7 +28,9 @@ test('loadAppSoundingConfig normalizes shorthand and legacy datastore config', (
   const shorthandConfig = loadAppSoundingConfig(shorthandRoot)
   assert.equal(shorthandConfig.datastore.mode, 'inherit')
   assert.equal(shorthandConfig.datastore.root, '.tmp/db')
+})
 
+test('loadAppSoundingConfig rejects legacy datastore config with a migration hint', () => {
   const legacyRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-app-config-'))
   fs.mkdirSync(path.join(legacyRoot, 'config'), { recursive: true })
   fs.writeFileSync(
@@ -36,9 +38,43 @@ test('loadAppSoundingConfig normalizes shorthand and legacy datastore config', (
     "module.exports.sounding = { datastore: { managed: { directory: '.tmp/legacy-db' } } }\n"
   )
 
-  const legacyConfig = loadAppSoundingConfig(legacyRoot)
-  assert.equal(legacyConfig.datastore.mode, 'managed')
-  assert.equal(legacyConfig.datastore.root, '.tmp/legacy-db')
+  assert.throws(
+    () => {
+      loadAppSoundingConfig(legacyRoot)
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_CONFIG_INVALID')
+      assert.equal(error.path, 'sounding.datastore.managed')
+      assert.equal(
+        error.suggestion,
+        'Use `datastore: { mode: \'managed\', root: ".tmp/legacy-db" }` instead.'
+      )
+      return true
+    }
+  )
+})
+
+test('loadAppSoundingConfig reports invalid app config with stable codes', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-app-config-'))
+  fs.mkdirSync(path.join(tempRoot, 'config'), { recursive: true })
+  fs.writeFileSync(
+    path.join(tempRoot, 'config', 'sounding.js'),
+    "module.exports.sounding = { browser: { type: 'safari' } }\n"
+  )
+
+  assert.throws(
+    () => {
+      loadAppSoundingConfig(tempRoot)
+    },
+    (error) => {
+      assert.equal(error.name, 'SoundingConfigError')
+      assert.equal(error.code, 'E_SOUNDING_CONFIG_INVALID')
+      assert.equal(error.path, 'sounding.browser.type')
+      assert.equal(error.value, 'safari')
+      assert.deepEqual(error.allowed, ['chromium', 'firefox', 'webkit'])
+      return true
+    }
+  )
 })
 
 test('createAppManager loads consumer apps by default and disables shipwright for virtual trials', async () => {
