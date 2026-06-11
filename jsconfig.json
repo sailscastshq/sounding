@@ -9,7 +9,8 @@
     "lib": ["ES2022", "DOM"],
     "types": ["node"],
     "strict": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "maxNodeModuleJsDepth": 0
   },
   "include": ["index.js", "lib/**/*.js", "typecheck/**/*.js"]
 }

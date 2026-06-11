@@ -19,7 +19,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "typecheck": "tsc -p jsconfig.json --noEmit"
   },
   "sails": {
@@ -39,6 +39,9 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
+    "sails": "^1.5.18",
+    "sails-hook-orm": "^4.0.3",
+    "sails-sqlite": "^0.2.6",
     "typescript": "^6.0.3"
   }
 }

@@ -1,4 +1,8 @@
 node_modules/
+!test/fixtures/sails-app/node_modules/
+!test/fixtures/sails-app/node_modules/sails-sqlite/
+!test/fixtures/sails-app/node_modules/sails-sqlite/index.js
+!test/fixtures/sails-app/node_modules/sails-sqlite/package.json
 coverage/
 playwright-report/
 test-results/
