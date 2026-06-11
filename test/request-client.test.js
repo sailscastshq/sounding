@@ -97,6 +97,59 @@ test('createRequestClient can attach an actor session for virtual policy checks'
   assert.deepEqual(calls[0].session.__soundingFlashStore, {})
 })
 
+test('createRequestClient exposes final virtual session snapshots on responses', async () => {
+  const sails = {
+    router: {
+      route(req, res) {
+        if (req.method === 'POST' && req.url === '/login') {
+          req.session.userId = 7
+          req.session.returnTo = '/dashboard'
+          req.flash('success', 'Welcome back')
+          res._clientRes.statusCode = 302
+          res._clientRes.headers = {
+            location: '/dashboard',
+          }
+          res._clientRes.end('')
+          return
+        }
+
+        if (req.method === 'POST' && req.url === '/logout') {
+          delete req.session.userId
+          req.session.loggedOut = true
+          res._clientRes.statusCode = 204
+          res._clientRes.end('')
+          return
+        }
+
+        res._clientRes.statusCode = 404
+        res._clientRes.end('')
+      },
+    },
+    config: {
+      sounding: {},
+    },
+  }
+
+  const request = createRequestClient({ sails })
+  const login = await request.post('/login', {
+    email: 'reader@example.com',
+  })
+
+  assert.equal(login.session.userId, 7)
+  assert.equal(login.session.returnTo, '/dashboard')
+  assert.deepEqual(login.session.__soundingFlashStore.success, ['Welcome back'])
+
+  const originalLoginSnapshot = login.session
+  const logout = await request.post('/logout')
+
+  assert.equal(logout.session.userId, undefined)
+  assert.equal(logout.session.returnTo, '/dashboard')
+  assert.equal(logout.session.loggedOut, true)
+  assert.notEqual(logout.session, originalLoginSnapshot)
+  assert.equal(login.session.userId, 7)
+  assert.equal(login.session.loggedOut, undefined)
+})
+
 test('createRequestClient.as uses creatorId when Creator auth is detected', async () => {
   const calls = []
   const sails = {
@@ -607,6 +660,7 @@ test('createRequestClient can use explicit HTTP transport when parity matters mo
     assert.equal(request.transport, 'http')
     createExpect(response).toHaveStatus(200)
     createExpect(response).toHaveJsonPath('ok', true)
+    assert.equal(response.session, undefined)
     assert.deepEqual(await response.json(), { ok: true })
   } finally {
     await close(server)

@@ -56,6 +56,10 @@ test('createAppManager exercises a real Sails fixture app through the Sounding r
   })
   assert.equal(login.status, 302)
   assert.equal(login.header('location'), '/dashboard')
+  assert.deepEqual(login.session.user, {
+    email: 'ada@example.com',
+  })
+  assert.deepEqual(login.session.__soundingFlashStore.info, ['Welcome ada@example.com'])
 
   const me = await booted.request.get('/me')
   assert.equal(me.status, 200)
@@ -120,6 +124,7 @@ test('createAppManager can lift the real fixture app for HTTP request trials', a
   const health = await booted.request.using('http').get('/api/health')
   assert.equal(health.status, 200)
   assert.equal(health.data.ok, true)
+  assert.equal(health.session, undefined)
 
   await runtime.lower()
 })
