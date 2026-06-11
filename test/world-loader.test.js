@@ -46,3 +46,86 @@ test('loadWorldFiles discovers factory and scenario definitions from tests/', as
   assert.equal(current.users.subscriber.role, 'subscriber')
   assert.match(current.users.subscriber.email, /^user\d+@example.com$/)
 })
+
+test('createWorldEngine reports unknown world entries with stable codes', async () => {
+  const world = createWorldEngine({ sails: {} })
+
+  assert.throws(
+    () => {
+      world.build('user')
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_WORLD_FACTORY_UNKNOWN')
+      assert.equal(error.factory, 'user')
+      return true
+    }
+  )
+
+  world.defineFactory('user', {
+    email: 'reader@example.com',
+  })
+
+  assert.throws(
+    () => {
+      world.build('user', {}, { traits: ['admin'] })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_WORLD_TRAIT_UNKNOWN')
+      assert.equal(error.factory, 'user')
+      assert.equal(error.trait, 'admin')
+      return true
+    }
+  )
+
+  await assert.rejects(
+    async () => {
+      await world.use('missing-dashboard')
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_WORLD_SCENARIO_UNKNOWN')
+      assert.equal(error.scenario, 'missing-dashboard')
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      world.register({})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_WORLD_DEFINITION_UNKNOWN')
+      return true
+    }
+  )
+})
+
+test('loadWorldFiles reports unknown world file exports with a stable code', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-worlds-'))
+  const factoriesDir = path.join(tempRoot, 'tests', 'factories')
+
+  fs.mkdirSync(factoriesDir, { recursive: true })
+  const source = path.join(factoriesDir, 'invalid.js')
+  fs.writeFileSync(source, 'module.exports = 42\n')
+
+  const world = createWorldEngine({ sails: {} })
+
+  await assert.rejects(
+    async () => {
+      await loadWorldFiles({
+        world,
+        appPath: tempRoot,
+        config: {
+          world: {
+            factories: 'tests/factories',
+          },
+        },
+        sails: {},
+      })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_WORLD_DEFINITION_UNKNOWN')
+      assert.equal(error.source, source)
+      return true
+    }
+  )
+})

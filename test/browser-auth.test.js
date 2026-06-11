@@ -73,6 +73,53 @@ test('createBrowserManager opens a browser session with the configured base URL'
   ])
 })
 
+test('createBrowserManager reports browser setup errors with stable codes', async () => {
+  const disabled = createBrowserManager({
+    sails: {
+      config: {
+        sounding: {
+          browser: {
+            enabled: false,
+          },
+        },
+      },
+    },
+  })
+
+  await assert.rejects(
+    async () => {
+      await disabled.open()
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_BROWSER_DISABLED')
+      return true
+    }
+  )
+
+  const missingType = createBrowserManager({
+    sails: {
+      config: {
+        appPath: '/tmp/app',
+        port: 3333,
+      },
+    },
+    loadPlaywright: async () => ({
+      devices: {},
+    }),
+  })
+
+  await assert.rejects(
+    async () => {
+      await missingType.open({ type: 'webkit' })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_BROWSER_TYPE_UNAVAILABLE')
+      assert.equal(error.browserType, 'webkit')
+      return true
+    }
+  )
+})
+
 test('createAuthHelpers can issue magic links and log a browser page in as an actor', async () => {
   const updates = []
   const page = {
@@ -157,6 +204,48 @@ test('createAuthHelpers can issue magic links and log a browser page in as an ac
 
   await auth.login.as('reader', page)
   assert.deepEqual(page.visits, ['/magic-link/token-123'])
+})
+
+test('createAuthHelpers reports auth input errors with stable codes', async () => {
+  const auth = createAuthHelpers({
+    sails: {},
+    world: {
+      current: {},
+    },
+    mailbox: {
+      latest() {
+        return null
+      },
+    },
+    request: {
+      post: async () => ({ status: 302 }),
+    },
+  })
+
+  await assert.rejects(
+    async () => {
+      await auth.resolveActor(null)
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_AUTH_ACTOR_REQUIRED')
+      return true
+    }
+  )
+
+  await assert.rejects(
+    async () => {
+      await auth.resolveActor({ id: 1 }, { createIfMissing: false })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_AUTH_EMAIL_UNRESOLVED')
+      assert.deepEqual(error.details, {
+        actor: {
+          id: 1,
+        },
+      })
+      return true
+    }
+  )
 })
 
 test('createAuthHelpers can log in with password through the real browser form', async () => {

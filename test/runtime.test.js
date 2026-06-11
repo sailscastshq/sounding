@@ -4,7 +4,7 @@ const assert = require('node:assert/strict')
 const soundingHook = require('../index')
 const { createRuntime, resolveConfig } = require('../lib/create-runtime')
 const { getDefaultConfig } = require('../lib/default-config')
-const { buildManagedSqlitePath } = require('../lib/resolve-datastore')
+const { buildManagedSqlitePath, resolveDatastore } = require('../lib/resolve-datastore')
 
 function createMailSend() {
   const send = async () => ({})
@@ -76,6 +76,77 @@ test('Sounding normalizes shorthand and legacy datastore config shapes', () => {
   assert.equal(legacyManaged.datastore.isolation, 'run')
 })
 
+test('resolveDatastore reports configuration errors with stable codes', () => {
+  assert.throws(
+    () => {
+      resolveDatastore({
+        sails: {
+          config: {
+            datastores: {},
+          },
+        },
+        soundingConfig: {
+          datastore: {
+            mode: 'inherit',
+            identity: 'archive',
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_DATASTORE_CONFIG_MISSING')
+      assert.equal(error.mode, 'inherit')
+      assert.equal(error.identity, 'archive')
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      resolveDatastore({
+        sails: {
+          config: {
+            datastores: {},
+          },
+        },
+        soundingConfig: {
+          datastore: {
+            mode: 'managed',
+            adapter: 'sails-postgresql',
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_DATASTORE_ADAPTER_UNSUPPORTED')
+      assert.equal(error.adapter, 'sails-postgresql')
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      resolveDatastore({
+        sails: {
+          config: {
+            datastores: {},
+          },
+        },
+        soundingConfig: {
+          datastore: {
+            mode: 'custom',
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_DATASTORE_MODE_UNKNOWN')
+      assert.equal(error.mode, 'custom')
+      return true
+    }
+  )
+})
+
 test('createRuntime manages a temporary datastore by default', async () => {
   const sails = {
     config: {
@@ -136,6 +207,43 @@ test('createRuntime manages a temporary datastore by default', async () => {
   await runtime.lower()
   assert.equal(runtime.mailbox.all().length, 0)
   assert.equal(runtime.world.factories.length, 0)
+})
+
+test('createRuntime helper runner reports lookup errors with stable codes', async () => {
+  const runtime = createRuntime({
+    config: {},
+    models: {},
+    helpers: {
+      user: {
+        signupWithTeam: {},
+      },
+    },
+  })
+
+  await assert.rejects(
+    async () => {
+      await runtime.helpers('user.missing')
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_HELPER_UNKNOWN')
+      assert.equal(error.identity, 'user.missing')
+      assert.deepEqual(error.details, {
+        identity: 'user.missing',
+      })
+      return true
+    }
+  )
+
+  await assert.rejects(
+    async () => {
+      await runtime.helpers.user.signupWithTeam()
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_HELPER_NOT_CALLABLE')
+      assert.equal(error.identity, 'user.signupWithTeam')
+      return true
+    }
+  )
 })
 
 test('createRuntime.lower resets shared virtual request session state', async () => {
@@ -228,6 +336,10 @@ test('createRuntime.lower continues cleanup and reports browser close failures',
     }
   )
 
+  assert.equal(cleanupError.code, 'E_SOUNDING_CLEANUP_FAILED')
+  assert.deepEqual(cleanupError.resources, ['browser'])
+  assert.equal(cleanupError.errors[0].code, 'E_SOUNDING_CLEANUP_RESOURCE_FAILED')
+  assert.equal(cleanupError.errors[0].resource, 'browser')
   assert.equal(cleanupError.errors[0].message, 'browser: browser close failed')
   assert.equal(sails.helpers.mail.send, originalSend)
   assert.equal(runtime.mailbox.all().length, 0)
@@ -276,6 +388,10 @@ test('createRuntime.lower continues cleanup and reports mail capture uninstall f
     }
   )
 
+  assert.equal(cleanupError.code, 'E_SOUNDING_CLEANUP_FAILED')
+  assert.deepEqual(cleanupError.resources, ['mail capture'])
+  assert.equal(cleanupError.errors[0].code, 'E_SOUNDING_CLEANUP_RESOURCE_FAILED')
+  assert.equal(cleanupError.errors[0].resource, 'mail capture')
   assert.equal(cleanupError.errors[0].message, 'mail capture: mail restore failed')
   assert.equal(browserClosed, true)
   assert.equal(runtime.mailbox.all().length, 0)

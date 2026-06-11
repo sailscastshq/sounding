@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 
 const { createRuntime } = require('../lib/create-runtime')
-const { buildCapturedMail } = require('../lib/create-mail-capture')
+const { buildCapturedMail, createMailCapture } = require('../lib/create-mail-capture')
 
 function createRenderView(htmlBuilder) {
   return (viewPath, locals) => ({
@@ -99,6 +99,47 @@ test('buildCapturedMail keeps explicit layout overrides in preview metadata', as
 
   assert.equal(message.layout, false)
   assert.equal(previewLayout, false)
+})
+
+test('runtime mail capture reports uninvokable send helpers with a stable code', async () => {
+  const sails = {
+    config: {
+      sounding: {
+        mail: {
+          deliver: true,
+        },
+      },
+    },
+    helpers: {
+      mail: {
+        send: {},
+      },
+    },
+  }
+  const mailbox = {
+    capture() {},
+  }
+  const capture = createMailCapture({
+    sails,
+    mailbox,
+    getConfig: () => sails.config.sounding,
+  })
+
+  capture.install()
+
+  try {
+    await assert.rejects(
+      async () => {
+        await sails.helpers.mail.send({ to: 'reader@example.com' })
+      },
+      (error) => {
+        assert.equal(error.code, 'E_SOUNDING_MAIL_SEND_UNAVAILABLE')
+        return true
+      }
+    )
+  } finally {
+    capture.uninstall()
+  }
 })
 
 test('runtime boot installs in-memory mail capture and lower restores the original helper', async () => {
