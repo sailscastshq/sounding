@@ -41,7 +41,9 @@
     "@types/node": "^25.9.1",
     "sails": "^1.5.18",
     "sails-hook-orm": "^4.0.3",
+    "sails-hook-sockets": "^3.0.2",
     "sails-sqlite": "^0.2.6",
+    "socket.io-client": "^4.8.3",
     "typescript": "^6.0.3"
   }
 }

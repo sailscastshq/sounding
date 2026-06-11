@@ -42,6 +42,8 @@ test('Sounding resolves calm Sails-native defaults', () => {
   assert.equal(config.datastore.root, '.tmp/db')
   assert.equal(config.datastore.isolation, 'worker')
   assert.equal(config.request.transport, 'virtual')
+  assert.equal(config.sockets.enabled, true)
+  assert.equal(config.sockets.path, '/socket.io')
   assert.equal(config.browser.projects[0], 'desktop')
 })
 
@@ -163,6 +165,7 @@ test('createRuntime manages a temporary datastore by default', async () => {
   assert.match(booted.datastore.config.url, /\.tmp\/db\/default\/worker-\d+\.db$/)
   assert.equal(runtime.request.transport, 'virtual')
   assert.equal(runtime.visit.transport, 'virtual')
+  assert.equal(typeof runtime.sockets.connect, 'function')
 
   const resultFromChain = await runtime.helpers.user.signupWithTeam({
     fullName: 'Kelvin O',

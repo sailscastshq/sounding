@@ -3,6 +3,7 @@
 const {
   createExpect,
   createRequestClient,
+  createSocketManager,
   createVisitClient,
   test,
 } = require('../index')
@@ -37,9 +38,37 @@ visit('/dashboard', {
   only: ['notifications'],
 })
 
-test('trial callback context is typed from JSDoc', async ({ get, expect, request }) => {
+const sockets = createSocketManager({
+  sails: {
+    config: {
+      sounding: {},
+    },
+    hooks: {
+      http: {
+        server: {
+          address() {
+            return {
+              address: '127.0.0.1',
+              port: 1337,
+            }
+          },
+        },
+      },
+    },
+  },
+})
+
+sockets.connect({ timeout: 100 }).then(async (socket) => {
+  await socket.post('/rooms/join', { room: 'lobby' })
+  await createExpect(socket).toReceive('chat:message', { room: 'lobby' })
+})
+
+test('trial callback context is typed from JSDoc', async ({ get, expect, request, sockets }) => {
   const response = await get('/health')
   expect(response).toHaveStatus(200)
+
+  const socket = await sockets.connect({ timeout: 100 })
+  await expect(socket).toReceive('chat:message', { text: 'hello' }, { timeout: 100 })
 
   // @ts-expect-error Trial request clients only support virtual and http transports.
   request.using('ftp')
