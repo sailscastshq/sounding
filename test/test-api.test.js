@@ -213,6 +213,101 @@ test('test() can override transport for the whole trial', async () => {
   ])
 })
 
+test('test() can auto-load a world before the trial handler', async () => {
+  const calls = []
+  const baseRegistrations = []
+  const currentWorld = {
+    users: {
+      subscriber: {
+        id: 42,
+        email: 'subscriber@example.com',
+      },
+    },
+  }
+  const runtime = {
+    helpers: {},
+    world: {
+      current: null,
+      async use(name, context) {
+        calls.push(['world:use', name, context])
+        this.current = currentWorld
+        return currentWorld
+      },
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+      as(actor) {
+        calls.push(['request:as', actor])
+        return {
+          async get(target) {
+            calls.push(['request:get', target])
+            return {
+              status: 200,
+              data: {
+                actor,
+              },
+              header: () => null,
+            }
+          },
+        }
+      },
+    },
+    visit: {
+      transport: 'virtual',
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+
+  const baseTest = (title, options, handler) => {
+    baseRegistrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest(
+    'subscriber can read the issue',
+    { world: { name: 'issue-access', context: { issue: 'first' } }, timeout: 500 },
+    async ({ request, world, expect }) => {
+      assert.equal(world.current, currentWorld)
+
+      const response = await request.as('subscriber').get('/issues/first')
+
+      expect(response).toHaveStatus(200)
+      expect(response).toHaveJsonPath('actor', 'subscriber')
+    }
+  )
+
+  assert.deepEqual(baseRegistrations[0].options, {
+    concurrency: false,
+    timeout: 500,
+  })
+
+  await baseRegistrations[0].handler({})
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['world:use', 'issue-access', { issue: 'first' }],
+    ['request:as', 'subscriber'],
+    ['request:get', '/issues/first'],
+    ['lower'],
+  ])
+})
+
 test('test() exposes socket helpers for socket-capable trials', async () => {
   const calls = []
   const baseRegistrations = []
@@ -296,7 +391,10 @@ test('test.only() runs focused trials through the Sounding wrapper', async () =>
   const runtime = {
     helpers: {},
     world: {
-      use: async () => ({}),
+      async use(name, context) {
+        calls.push(['world:use', name, context])
+        return {}
+      },
     },
     mailbox: {
       latest: () => null,
@@ -367,7 +465,12 @@ test('test.only() runs focused trials through the Sounding wrapper', async () =>
 
   soundingTest.only(
     'focused http browser trial',
-    { transport: 'http', browser: { project: 'desktop' }, timeout: 500 },
+    {
+      transport: 'http',
+      world: 'focused-dashboard',
+      browser: { project: 'desktop' },
+      timeout: 500,
+    },
     async ({ sails, get, request, visit, page, expect }) => {
       const response = await get('/health')
 
@@ -390,6 +493,7 @@ test('test.only() runs focused trials through the Sounding wrapper', async () =>
   await onlyRegistrations[0].handler({})
   assert.deepEqual(calls, [
     ['boot', 'trial'],
+    ['world:use', 'focused-dashboard', {}],
     ['using', 'http'],
     ['visit:using', 'http'],
     ['browser:open', { project: 'desktop' }],
@@ -489,7 +593,114 @@ test('test() reports malformed trial arguments with stable codes', () => {
     }
   )
 
+  assert.throws(
+    () => {
+      soundingTest('bad world', { world: true }, async () => {})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.world')
+      assert.equal(error.value, true)
+      assert.match(error.suggestion, /world: "signed-in-user"/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest('bad world name', { world: { name: '' } }, async () => {})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.world.name')
+      assert.equal(error.value, '')
+      assert.match(error.message, /world.name/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest(
+        'bad world context',
+        { world: { name: 'signed-in-user', context: 'admin' } },
+        async () => {}
+      )
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.world.context')
+      assert.equal(error.value, 'admin')
+      assert.match(error.message, /world.context/)
+      return true
+    }
+  )
+
   assert.equal(baseRegistrations.length, 0)
+})
+
+test('test() annotates trial failures with auto-loaded world metadata', async () => {
+  const baseRegistrations = []
+  const runtime = {
+    helpers: {},
+    world: {
+      current: null,
+      async use(name) {
+        this.current = {
+          users: {
+            subscriber: {
+              id: 42,
+            },
+          },
+        }
+        return this.current
+      },
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+    },
+    visit: {
+      transport: 'virtual',
+    },
+    async boot() {
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {},
+  }
+
+  const baseTest = (title, options, handler) => {
+    baseRegistrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest('subscriber cannot read the issue', { world: 'issue-access' }, async () => {
+    throw new Error('expected failure')
+  })
+
+  await assert.rejects(
+    () => baseRegistrations[0].handler({}),
+    (error) => {
+      assert.equal(error.message, 'expected failure')
+      assert.deepEqual(error.sounding, {
+        world: {
+          name: 'issue-access',
+          context: {},
+        },
+      })
+      return true
+    }
+  )
 })
 
 test('test.only() reports malformed focused trial arguments with stable codes', () => {

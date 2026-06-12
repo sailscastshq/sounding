@@ -16,6 +16,7 @@ The canonical Sails-native surface is:
 - `get('/api/issues')` or `sails.sounding.request.get('/api/issues')` inside endpoint-style trials
 - `await auth.login.withPassword('creator@example.com', page, { password: 'secret123' })` inside browser trials
 - `await auth.request.withPassword('creator@example.com', { password: 'secret123' })` inside request trials
+- `test('...', { world: 'signed-in-user' }, async ({ request }) => {})` can auto-load named worlds before the handler runs
 - `request.as('owner')` and `visit.as('owner')` can resolve actor aliases from the current world
 - request helpers default to Sails virtual requests powered by `sails.request()`
 - virtual request responses expose the final `req.session` snapshot as `response.session`; HTTP responses leave it undefined
@@ -29,7 +30,7 @@ The canonical Sails-native surface is:
 Sounding also owns its own built-in world engine, so the same package can:
 - define factories under `tests/factories`
 - define scenarios under `tests/scenarios`
-- load named worlds for endpoint and browser trials
+- auto-load named worlds for endpoint, Inertia, socket, and browser trials
 - capture outgoing mail by wrapping `sails.helpers.mail.send` and storing normalized messages in `sails.sounding.mailbox`
 
 The default configuration story is intentionally calm:
