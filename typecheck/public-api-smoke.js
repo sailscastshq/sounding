@@ -73,3 +73,16 @@ test('trial callback context is typed from JSDoc', async ({ get, expect, request
   // @ts-expect-error Trial request clients only support virtual and http transports.
   request.using('ftp')
 })
+
+test(
+  'world-backed trial context is typed from JSDoc',
+  { world: { name: 'signed-in-user', context: { role: 'member' } } },
+  async ({ request, world, expect }) => {
+    const response = await request.as('member').get('/me')
+
+    expect(response).toHaveStatus(200)
+    expect(response).toHaveJsonPath('email', world.current.users.member.email)
+  }
+)
+
+test('world string options are typed from JSDoc', { world: 'signed-in-user' }, async () => {})

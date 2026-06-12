@@ -4,6 +4,7 @@ const net = require('node:net')
 const path = require('node:path')
 
 const { createAppManager } = require('../lib/create-app-manager')
+const { createTestApi } = require('../lib/create-test-api')
 
 const fixtureAppPath = path.join(__dirname, 'fixtures', 'sails-app')
 
@@ -131,4 +132,41 @@ test('createAppManager can lift the real fixture app for HTTP request trials', a
   assert.equal(health.session, undefined)
 
   await runtime.lower()
+})
+
+test('test() auto-loads fixture worlds before request trials', async (t) => {
+  const manager = createAppManager({
+    appPath: fixtureAppPath,
+  })
+  const registrations = []
+
+  t.after(async () => {
+    await manager.lower()
+  })
+
+  const runtime = await manager.runtime()
+  const soundingTest = createTestApi({
+    runtime,
+    baseTest(title, options, handler) {
+      registrations.push({ title, options, handler })
+      return { title }
+    },
+  })
+
+  soundingTest(
+    'member can inspect the current profile',
+    { world: 'signed-in-user' },
+    async ({ request, world, expect }) => {
+      const response = await request.as('member').get('/me')
+
+      expect(response).toHaveStatus(200)
+      expect(response).toHaveJsonPath('email', world.current.users.member.email)
+    }
+  )
+
+  assert.deepEqual(registrations[0].options, {
+    concurrency: false,
+  })
+
+  await registrations[0].handler({})
 })
