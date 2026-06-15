@@ -35,6 +35,40 @@ Sounding also owns its own built-in world engine, so the same package can:
 - merge repeated builder `.with()` calls, with `.withOnly()` available when you want to use only the next overrides
 - capture outgoing mail by wrapping `sails.helpers.mail.send` and storing normalized messages in `sails.sounding.mailbox`
 
+Request-level Inertia trials can assert page contracts without launching a browser:
+
+```js
+const { test } = require('sounding')
+
+test('dashboard shows the signed-in creator', { world: 'signed-in-user' }, async ({ visit, expect }) => {
+  const page = await visit.as('owner')('/dashboard')
+
+  expect(page).toBeInertiaPage('dashboard/index')
+  expect(page).toHaveInertiaProps({
+    'auth.user.email': 'owner@example.com',
+    'stats.projects': 2,
+    projects: [{ name: 'Launch Plan' }],
+  })
+  expect(page).toHaveNoInertiaErrors()
+})
+
+test('dashboard partial reload returns only notifications', async ({ visit, expect }) => {
+  const page = await visit('/dashboard', {
+    component: 'dashboard/index',
+    only: ['notifications'],
+    reset: ['sidebar'],
+  })
+
+  expect(page).toBeInertiaPage('dashboard/index')
+  expect(page).toHaveInertiaPartialReload({
+    component: 'dashboard/index',
+    only: ['notifications'],
+    reset: ['sidebar'],
+  })
+  expect(page).toHaveOnlyInertiaProps(['notifications'])
+})
+```
+
 The default configuration story is intentionally calm:
 - Sounding only enables its hook in the environments listed under `sounding.environments`
 - the default is `['test']`, so non-test boot paths stay dark unless you opt in explicitly

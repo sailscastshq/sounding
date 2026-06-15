@@ -833,7 +833,7 @@ test('test() exposes visit for Inertia-style trials', async () => {
     const page = await visit('/pricing')
 
     expect(page).toBeInertiaPage('billing/pricing')
-    expect(page).toHaveProp('plans', [])
+    expect(page).toHaveInertiaProp('plans', [])
     assert.equal(visit.transport, 'virtual')
     assert.equal(sails.sounding.visit.transport, 'virtual')
   })
