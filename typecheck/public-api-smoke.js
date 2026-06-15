@@ -37,6 +37,17 @@ const visit = createVisitClient({ request })
 visit('/dashboard', {
   component: 'dashboard/index',
   only: ['notifications'],
+}).then((page) => {
+  createExpect(page).toBeInertiaPage('dashboard/index')
+  createExpect(page).toHaveInertiaProp('notifications')
+  createExpect(page).toHaveInertiaProps({ notifications: [] })
+  createExpect(page).toHaveInertiaPropCount('notifications', 0)
+  createExpect(page).toHaveOnlyInertiaProps(['notifications'])
+  createExpect(page).toHaveNoInertiaErrors()
+  createExpect(page).toHaveInertiaPartialReload({
+    component: 'dashboard/index',
+    only: ['notifications'],
+  })
 })
 
 const worldEngine = createWorldEngine({ sails: { models: {} } })

@@ -20,6 +20,12 @@ test('createVisitClient defaults to a GET visit with Inertia headers', async () 
               component: 'billing/pricing',
               props: { plans: [] },
             },
+            request: {
+              method: 'GET',
+              target,
+              transport: 'virtual',
+              headers: options.headers || {},
+            },
             header: () => null,
           }
         },
@@ -101,7 +107,7 @@ test('createVisitClient exposes post and transport scoping', async () => {
   const httpVisit = visit.using('http')
 
   createExpect(page).toBeInertiaPage('auth/signup')
-  createExpect(page).toHaveValidationError('fullName', 'Full name is required.')
+  createExpect(page).toHaveInertiaError('fullName', 'Full name is required.')
   assert.equal(httpVisit.transport, 'http')
   assert.deepEqual(calls[0], ['withHeaders', DEFAULT_HEADERS])
   assert.deepEqual(calls[1], [
@@ -180,6 +186,12 @@ test('createVisitClient can express partial reload headers cleanly', async () =>
                 notifications: [],
               },
             },
+            request: {
+              method: 'GET',
+              target,
+              transport: 'virtual',
+              headers: options.headers || {},
+            },
             header: () => null,
           }
         },
@@ -201,6 +213,13 @@ test('createVisitClient can express partial reload headers cleanly', async () =>
   })
 
   createExpect(page).toBeInertiaPage('dashboard/index')
+  createExpect(page).toHaveInertiaPartialReload({
+    component: 'dashboard/index',
+    only: ['notifications'],
+    reset: ['sidebar'],
+    version: 'v1',
+  })
+  createExpect(page).toHaveOnlyInertiaProps(['notifications'])
   assert.deepEqual(calls[1], [
     'get',
     '/dashboard',
@@ -213,6 +232,92 @@ test('createVisitClient can express partial reload headers cleanly', async () =>
       },
     },
   ])
+})
+
+test('createExpect supports first-class Inertia page contract matchers', () => {
+  const page = {
+    status: 200,
+    data: {
+      component: 'dashboard/index',
+      props: {
+        auth: {
+          user: {
+            email: 'ada@example.com',
+            fullName: 'Ada Lovelace',
+          },
+        },
+        projects: [
+          { id: 1, name: 'Analytical Engine' },
+          { id: 2, name: 'Difference Engine' },
+        ],
+        stats: {
+          projects: 2,
+        },
+        shared: {
+          featureFlags: {
+            billing: true,
+          },
+        },
+        errors: {
+          email: 'Email is required.',
+          password: ['Password is too short.'],
+        },
+      },
+    },
+    request: {
+      method: 'GET',
+      target: '/dashboard',
+      transport: 'virtual',
+      headers: {
+        'x-inertia-partial-component': 'dashboard/index',
+        'x-inertia-partial-data': 'projects,stats',
+        'x-inertia-reset': 'sidebar',
+      },
+    },
+    header: () => null,
+  }
+  const expectPage = createExpect(page)
+
+  expectPage.toBeInertiaPage('dashboard/index')
+  expectPage.toHaveInertiaProp('auth.user.email', 'ada@example.com')
+  expectPage.toHaveInertiaProp('auth.user', { email: 'ada@example.com' })
+  expectPage.toHaveInertiaProps({
+    'stats.projects': 2,
+    projects: [{ id: 1 }],
+  })
+  expectPage.toMatchInertiaProp('auth.user.fullName', /Ada/)
+  expectPage.toHaveInertiaPropCount('projects', 2)
+  expectPage.toHaveSharedInertiaProp('featureFlags.billing', true)
+  expectPage.toHaveInertiaError('email', /required/)
+  expectPage.toHaveInertiaErrors(['email', 'password'])
+  expectPage.toHaveInertiaErrors({
+    email: /required/,
+    password: ['Password is too short.'],
+  })
+  expectPage.toHaveInertiaPartialReload({
+    component: 'dashboard/index',
+    only: ['projects', 'stats'],
+    reset: ['sidebar'],
+  })
+  expectPage.not.toHaveInertiaProp('auth.user.ssn')
+  expectPage.not.toHaveSharedInertiaProp('featureFlags.experimental')
+  expectPage.not.toHaveInertiaError('fullName')
+
+  assert.throws(
+    () => expectPage.toHaveInertiaProp('missing'),
+    /Expected Inertia prop `missing` to be present/
+  )
+})
+
+test('createExpect can assert empty Inertia validation errors', () => {
+  createExpect({
+    data: {
+      component: 'dashboard/index',
+      props: {
+        errors: {},
+      },
+    },
+  }).toHaveNoInertiaErrors()
 })
 
 test('createVisitClient requires a component for partial reload selectors', async () => {

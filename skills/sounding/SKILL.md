@@ -38,6 +38,12 @@ Typical triggers:
 - Treat hook activation as explicit and test-first. By default, Sounding only enables its Sails hook in the environments listed under `sounding.environments`, which starts as `['test']`.
 - Use the app's real auth flow when auth behavior matters. If `/login` or `/magic-link` is the behavior, do not replace it with fake session plumbing.
 - Use `request` for JSON and endpoint behavior, `visit()` for Inertia contracts, and browser trials only when the DOM or navigation is the behavior under test.
+- Prefer Inertia-specific matchers for page contracts:
+  - `expect(page).toBeInertiaPage('dashboard/index')`
+  - `expect(page).toHaveInertiaProp('auth.user.email', email)`
+  - `expect(page).toHaveInertiaProps({ 'stats.projects': 2 })`
+  - `expect(page).toHaveNoInertiaErrors()`
+  - `expect(page).toHaveInertiaPartialReload({ component, only })`
 - Treat worlds and actors as product language, not just setup helpers. Prefer `{ world: 'scenario-name' }` when a trial has one obvious setup scenario, and use manual `await world.use()` only when the trial needs dynamic setup or multiple worlds.
 - Function-based trait patches merge into the base record. Return only the fields the trait changes unless the trait genuinely needs to derive values from the base.
 - Prefer Sounding factories over repeated inline model creation. If more than one test file creates the same kind of record by hand, repeated uniqueness helpers, or repeated setup vocabulary, stop and add or reuse a `tests/factories` factory before writing more ad hoc setup.
