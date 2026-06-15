@@ -40,12 +40,20 @@ Typical triggers:
 - Use `request` for JSON and endpoint behavior, `visit()` for Inertia contracts, and browser trials only when the DOM or navigation is the behavior under test.
 - Treat worlds and actors as product language, not just setup helpers. Prefer `{ world: 'scenario-name' }` when a trial has one obvious setup scenario, and use manual `await world.use()` only when the trial needs dynamic setup or multiple worlds.
 - Function-based trait patches merge into the base record. Return only the fields the trait changes unless the trait genuinely needs to derive values from the base.
-- Prefer Sounding factories over repeated inline model creation. If more than one test file creates the same kind of record by hand, add or reuse a `tests/factories` factory.
+- Prefer Sounding factories over repeated inline model creation. If more than one test file creates the same kind of record by hand, repeated uniqueness helpers, or repeated setup vocabulary, stop and add or reuse a `tests/factories` factory before writing more ad hoc setup.
 - Use `sequence()` in factories for deterministic unique emails, slugs, tokens, invoice numbers, and similar values. Do not keep reintroducing `Date.now()` plus random helpers in test bodies.
 - Use traits for meaningful variants such as `admin`, `subscriber`, `unverified`, or `published`. Use scenarios when the setup is a business situation, not just a record shape.
-- Remember the top-level shape: `world.create('user').trait('admin')` is fluent and persisted; `world.build('user', {}, { traits: ['admin'] })` returns an immediate preview object.
+- Follow the current factory-builder shape: `world.create('user').trait('admin')` is fluent and persisted; `world.build('user', {}, { traits: ['admin'] })` returns an immediate preview object.
 
-## Factory Pattern
+## Factory Guardrails
+
+Use this graduation path when test data starts to repeat:
+
+- One-off setup may stay inline while it belongs to one trial.
+- Repeated primitive record shape belongs in `tests/factories`.
+- Repeated business situation belongs in `tests/scenarios`.
+- Repeated uniqueness belongs in `sequence()`, not in test-body helpers.
+- Repeated auth record setup belongs in a factory, while auth behavior should still use the app's real `login` or `auth` flow.
 
 When repeated setup appears, move the primitive record shape into a factory first:
 
@@ -58,13 +66,40 @@ module.exports = ({ defineFactory }) =>
     emailStatus: 'verified'
   })).trait('unverified', {
     emailStatus: 'unverified'
-  })
+  }).trait('withValidVerificationCode', () => ({
+    emailVerificationCode: '111111'
+  }))
 ```
 
 Then trials and scenarios should speak in product terms:
 
 ```js
 const creator = await create('creator').trait('unverified')
+```
+
+For top-level world usage, persisted creation is fluent too:
+
+```js
+const creator = await world.create('creator')
+  .trait('unverified')
+  .trait('withValidVerificationCode')
+```
+
+Do not repeat raw auth-shaped setup like this across files:
+
+```js
+const creator = await sails.models.creator.create({
+  email: `creator-${Date.now()}-${Math.random()}@example.com`,
+  fullName: 'Test Creator',
+  emailStatus: 'verified'
+}).fetch()
+```
+
+Put the record shape and deterministic uniqueness in the factory, then let the trial focus on behavior:
+
+```js
+const creator = await create('creator')
+await login.as(creator)
 ```
 
 ## Read next
