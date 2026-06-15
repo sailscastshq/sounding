@@ -18,6 +18,7 @@ The canonical Sails-native surface is:
 - `await auth.request.withPassword('creator@example.com', { password: 'secret123' })` inside request trials
 - `test('...', { world: 'signed-in-user' }, async ({ request }) => {})` can auto-load named worlds before the handler runs
 - `request.as('owner')` and `visit.as('owner')` can resolve actor aliases from the current world
+- failed browser trials capture the current URL and a full-page screenshot under `.tmp/sounding/artifacts`
 - request helpers default to Sails virtual requests powered by `sails.request()`
 - virtual request responses expose the final `req.session` snapshot as `response.session`; HTTP responses leave it undefined
 - request assertions can check auth/session state with `expect(response).toHaveSession('userId', user.id)` and flash messages with `expect(response).toHaveFlash('info', /welcome/i)`
@@ -78,6 +79,7 @@ The default configuration story is intentionally calm:
 - managed SQLite artifacts live under `.tmp/db`
 - the default datastore identity is `default`
 - browser projects start with `desktop`
+- browser failure artifacts store screenshots and current URLs by default, while traces and videos are opt-in
 - mail capture previews use the `mail` layout by default, matching the current `sails-hook-mail` convention
 - apps with a different mail layout can set `sounding.mail.layout`, for example `layout-email`
 - `inherit` remains available when an app already has a serious test datastore story
@@ -91,6 +93,84 @@ module.exports.sounding = {
 ```
 
 If you intentionally want Sounding during another boot path, widen the list explicitly, for example `['test', 'console']` or `['test', 'production']`.
+
+## Browser failure artifacts
+
+Browser-capable trials should be easy to debug without turning every run into a heavyweight recording session.
+
+By default, a failed `{ browser: true }` trial writes:
+
+- `current-url.txt`
+- `screenshot.png`
+
+under a stable, readable directory:
+
+```txt
+.tmp/sounding/artifacts/<trial-name>/<browser-project>/
+```
+
+For a trial named `dashboard shows owner stats` on the default `desktop` project, that becomes:
+
+```txt
+.tmp/sounding/artifacts/dashboard-shows-owner-stats/desktop/
+```
+
+When a failure happens, Sounding appends the current URL and artifact paths to the thrown error so the terminal output points straight at the evidence.
+
+Traces and videos are intentionally off by default because they cost more disk and time. Turn them on for a whole app:
+
+```js
+module.exports.sounding = {
+  browser: {
+    artifacts: {
+      trace: true,
+      video: true
+    }
+  }
+}
+```
+
+Or scope them to one suspicious trial:
+
+```js
+test(
+  'checkout keeps the cart after refresh',
+  {
+    browser: {
+      artifacts: {
+        trace: true,
+        video: true
+      }
+    }
+  },
+  async ({ page, expect }) => {
+    await page.goto('/checkout')
+    await page.reload()
+
+    await expect(page.getByText('Your cart')).toBeVisible()
+  }
+)
+```
+
+Use `false` as a concise off switch:
+
+```js
+test('fast smoke flow', { browser: { artifacts: false } }, async ({ page }) => {
+  await page.goto('/health')
+})
+```
+
+For artifact settings, `true` means “keep this when the trial fails.” If you need an artifact on successful browser trials too, use `on` instead:
+
+```js
+module.exports.sounding = {
+  browser: {
+    artifacts: {
+      trace: 'on'
+    }
+  }
+}
+```
 
 This repository starts with docs-driven product research and the first hook/runtime scaffolding for that vision.
 

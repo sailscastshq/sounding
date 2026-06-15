@@ -496,7 +496,100 @@ test('test.only() runs focused trials through the Sounding wrapper', async () =>
     ['world:use', 'focused-dashboard', {}],
     ['using', 'http'],
     ['visit:using', 'http'],
-    ['browser:open', { project: 'desktop' }],
+    ['browser:open', { project: 'desktop', trialName: 'focused http browser trial' }],
+    ['lower'],
+  ])
+})
+
+test('test() appends browser artifact diagnostics to failed browser trials', async () => {
+  const calls = []
+  const registrations = []
+  const artifacts = {
+    outputDir: '/tmp/sounding-artifacts',
+    directory: '/tmp/sounding-artifacts/dashboard/desktop',
+    project: 'desktop',
+    trialName: 'dashboard failure keeps browser evidence',
+    currentUrl: 'http://127.0.0.1:3333/dashboard',
+    currentUrlPath: '/tmp/sounding-artifacts/dashboard/desktop/current-url.txt',
+    screenshot: '/tmp/sounding-artifacts/dashboard/desktop/screenshot.png',
+    trace: '/tmp/sounding-artifacts/dashboard/desktop/trace.zip',
+    video: '/tmp/sounding-artifacts/dashboard/desktop/video.webm',
+    errors: [],
+  }
+  const runtime = {
+    helpers: {},
+    world: {
+      reset() {},
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+    },
+    visit: {
+      transport: 'virtual',
+    },
+    sockets: {},
+    browser: {
+      async open(options) {
+        calls.push(['browser:open', options])
+
+        return {
+          browser: { name: 'browser' },
+          context: { name: 'context' },
+          page: { name: 'page' },
+          project: 'desktop',
+          async captureFailureArtifacts() {
+            calls.push(['browser:captureFailureArtifacts'])
+            return artifacts
+          },
+        }
+      },
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+  const baseTest = (title, options, handler) => {
+    registrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest('dashboard failure keeps browser evidence', { browser: true }, async () => {
+    throw new Error('dashboard title was missing')
+  })
+
+  await assert.rejects(
+    async () => {
+      await registrations[0].handler({})
+    },
+    (error) => {
+      assert.match(error.message, /dashboard title was missing/)
+      assert.match(error.message, /Sounding browser artifacts:/)
+      assert.match(error.message, /http:\/\/127\.0\.0\.1:3333\/dashboard/)
+      assert.match(error.message, /screenshot\.png/)
+      assert.equal(error.sounding.browserArtifacts, artifacts)
+      return true
+    }
+  )
+
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['browser:open', { trialName: 'dashboard failure keeps browser evidence' }],
+    ['browser:captureFailureArtifacts'],
     ['lower'],
   ])
 })
@@ -576,6 +669,23 @@ test('test() reports malformed trial arguments with stable codes', () => {
       assert.equal(error.path, 'options.browser')
       assert.equal(error.value, 'mobile')
       assert.match(error.suggestion, /browser: true/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest(
+        'bad browser artifacts',
+        { browser: { artifacts: { videos: true } } },
+        async () => {}
+      )
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.browser.artifacts.videos')
+      assert.deepEqual(error.allowed, ['outputDir', 'screenshot', 'trace', 'video', 'currentUrl'])
+      assert.match(error.suggestion, /outputDir/)
       return true
     }
   )
