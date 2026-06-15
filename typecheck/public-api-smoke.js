@@ -3,6 +3,7 @@
 const {
   createExpect,
   createRequestClient,
+  createWorldEngine,
   createSocketManager,
   createVisitClient,
   test,
@@ -37,6 +38,21 @@ visit('/dashboard', {
   component: 'dashboard/index',
   only: ['notifications'],
 })
+
+const worldEngine = createWorldEngine({ sails: { models: {} } })
+worldEngine.defineFactory('user', {
+  email: 'reader@example.com',
+  role: 'reader',
+}).trait('admin', {
+  role: 'admin',
+})
+
+worldEngine
+  .create('user')
+  .trait('admin')
+  .with({ email: 'admin@example.com' })
+  .withOnly({ fullName: 'Admin Example' })
+  .then((user) => user)
 
 const sockets = createSocketManager({
   sails: {

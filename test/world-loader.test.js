@@ -47,6 +47,115 @@ test('loadWorldFiles discovers factory and scenario definitions from tests/', as
   assert.match(current.users.subscriber.email, /^user\d+@example.com$/)
 })
 
+test('createWorldEngine builders merge overrides and keep withOnly available', async () => {
+  const world = createWorldEngine({ sails: {} })
+
+  world.defineFactory('user', ({ sequence }) => ({
+    email: sequence('user', (number) => `user${number}@example.com`),
+    fullName: 'Test User',
+    role: 'reader',
+  }))
+
+  world.defineScenario('team-access', async ({ create }) => {
+    const member = await create('user')
+      .with({ email: 'member@example.com' })
+      .with({ role: 'member' })
+
+    const replacement = await create('user')
+      .with({ email: 'ignored@example.com' })
+      .withOnly({ role: 'admin' })
+
+    return {
+      users: {
+        member,
+        replacement,
+      },
+    }
+  })
+
+  const current = await world.use('team-access')
+
+  assert.deepEqual(current.users.member, {
+    email: 'member@example.com',
+    fullName: 'Test User',
+    role: 'member',
+  })
+  assert.deepEqual(current.users.replacement, {
+    email: 'user2@example.com',
+    fullName: 'Test User',
+    role: 'admin',
+  })
+})
+
+test('createWorldEngine function traits merge into the base record', () => {
+  const world = createWorldEngine({ sails: {} })
+
+  world.defineFactory('user', {
+    email: 'reader@example.com',
+    fullName: 'Reader Example',
+    role: 'reader',
+  }).trait('verified', (user) => ({
+    emailVerificationCode: `${user.role}-verified`,
+    emailVerifiedAt: '2026-06-15T00:00:00.000Z',
+  }))
+
+  const user = world.build('user', {}, { traits: ['verified'] })
+
+  assert.deepEqual(user, {
+    email: 'reader@example.com',
+    fullName: 'Reader Example',
+    role: 'reader',
+    emailVerificationCode: 'reader-verified',
+    emailVerifiedAt: '2026-06-15T00:00:00.000Z',
+  })
+})
+
+test('createWorldEngine supports fluent traits on top-level create', async () => {
+  const created = []
+  const world = createWorldEngine({
+    sails: {
+      models: {
+        user: {
+          create(value) {
+            return {
+              fetch() {
+                const record = {
+                  id: created.length + 1,
+                  ...value,
+                }
+
+                created.push(record)
+                return record
+              },
+            }
+          },
+        },
+      },
+    },
+  })
+
+  world.defineFactory('user', {
+    email: 'reader@example.com',
+    fullName: 'Reader Example',
+    role: 'reader',
+  }).trait('admin', {
+    role: 'admin',
+  })
+
+  const admin = await world
+    .create('user')
+    .trait('admin')
+    .with({ email: 'admin@example.com' })
+
+  assert.deepEqual(admin, {
+    id: 1,
+    email: 'admin@example.com',
+    fullName: 'Reader Example',
+    role: 'admin',
+  })
+  assert.deepEqual(created, [admin])
+})
+
 test('createWorldEngine reports unknown world entries with stable codes', async () => {
   const world = createWorldEngine({ sails: {} })
   world.defineFactory('account', {
