@@ -31,6 +31,8 @@ Sounding also owns its own built-in world engine, so the same package can:
 - define factories under `tests/factories`
 - define scenarios under `tests/scenarios`
 - auto-load named worlds for endpoint, Inertia, socket, and browser trials
+- compose world records with fluent builders like `await create('user').trait('admin').with({ email })`
+- merge repeated builder `.with()` calls, with `.withOnly()` available when you want to use only the next overrides
 - capture outgoing mail by wrapping `sails.helpers.mail.send` and storing normalized messages in `sails.sounding.mailbox`
 
 The default configuration story is intentionally calm:

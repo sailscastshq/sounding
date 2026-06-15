@@ -31,10 +31,41 @@ Typical triggers:
   - `auth.request.withPassword(...)`
   - `login.withPassword(...)`
   - `login.as(...)`
+- Prefer fluent world builders when setup is record-shaped:
+  - inside scenarios: `await create('user').trait('admin').with({ email })`
+  - top-level persisted records: `await world.create('user').trait('admin').with({ email })`
+  - repeated `.with()` calls merge overrides; use `.withOnly()` only when you intentionally want to use only the next overrides
 - Treat hook activation as explicit and test-first. By default, Sounding only enables its Sails hook in the environments listed under `sounding.environments`, which starts as `['test']`.
 - Use the app's real auth flow when auth behavior matters. If `/login` or `/magic-link` is the behavior, do not replace it with fake session plumbing.
 - Use `request` for JSON and endpoint behavior, `visit()` for Inertia contracts, and browser trials only when the DOM or navigation is the behavior under test.
 - Treat worlds and actors as product language, not just setup helpers. Prefer `{ world: 'scenario-name' }` when a trial has one obvious setup scenario, and use manual `await world.use()` only when the trial needs dynamic setup or multiple worlds.
+- Function-based trait patches merge into the base record. Return only the fields the trait changes unless the trait genuinely needs to derive values from the base.
+- Prefer Sounding factories over repeated inline model creation. If more than one test file creates the same kind of record by hand, add or reuse a `tests/factories` factory.
+- Use `sequence()` in factories for deterministic unique emails, slugs, tokens, invoice numbers, and similar values. Do not keep reintroducing `Date.now()` plus random helpers in test bodies.
+- Use traits for meaningful variants such as `admin`, `subscriber`, `unverified`, or `published`. Use scenarios when the setup is a business situation, not just a record shape.
+- Remember the top-level shape: `world.create('user').trait('admin')` is fluent and persisted; `world.build('user', {}, { traits: ['admin'] })` returns an immediate preview object.
+
+## Factory Pattern
+
+When repeated setup appears, move the primitive record shape into a factory first:
+
+```js
+// tests/factories/creator.js
+module.exports = ({ defineFactory }) =>
+  defineFactory('creator', ({ sequence }) => ({
+    email: sequence('creator-email', (n) => `creator-${n}@example.com`),
+    fullName: 'Test Creator',
+    emailStatus: 'verified'
+  })).trait('unverified', {
+    emailStatus: 'unverified'
+  })
+```
+
+Then trials and scenarios should speak in product terms:
+
+```js
+const creator = await create('creator').trait('unverified')
+```
 
 ## Read next
 
