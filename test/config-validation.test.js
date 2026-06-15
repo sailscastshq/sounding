@@ -79,6 +79,53 @@ test('resolveConfig names invalid browser fields precisely', () => {
   )
 })
 
+test('resolveConfig validates browser artifact options precisely', () => {
+  const config = resolveConfig({
+    config: {
+      sounding: {
+        browser: {
+          artifacts: {
+            outputDir: '.tmp/custom-artifacts',
+            screenshot: true,
+            trace: 'on-failure',
+            video: 'off',
+            currentUrl: false,
+          },
+        },
+      },
+    },
+  })
+
+  assert.equal(config.browser.artifacts.outputDir, '.tmp/custom-artifacts')
+  assert.equal(config.browser.artifacts.screenshot, true)
+  assert.equal(config.browser.artifacts.trace, 'on-failure')
+  assert.equal(config.browser.artifacts.video, 'off')
+  assert.equal(config.browser.artifacts.currentUrl, false)
+
+  assert.throws(
+    () => {
+      resolveConfig({
+        config: {
+          sounding: {
+            browser: {
+              artifacts: {
+                video: 'sometimes',
+              },
+            },
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_CONFIG_INVALID')
+      assert.equal(error.path, 'sounding.browser.artifacts.video')
+      assert.equal(error.value, 'sometimes')
+      assert.deepEqual(error.allowed, ['off', 'on', 'on-failure'])
+      return true
+    }
+  )
+})
+
 test('resolveConfig validates websocket helper options precisely', () => {
   assert.throws(
     () => {

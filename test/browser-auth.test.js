@@ -1,5 +1,8 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
+const fs = require('node:fs/promises')
+const os = require('node:os')
+const path = require('node:path')
 
 const { createBrowserManager } = require('../lib/create-browser-manager')
 const { createAuthHelpers } = require('../lib/create-auth-helpers')
@@ -71,6 +74,110 @@ test('createBrowserManager opens a browser session with the configured base URL'
     ['context:close'],
     ['browser:close'],
   ])
+})
+
+test('createBrowserManager captures failure artifacts with stable browser paths', async () => {
+  const artifactRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'sounding-artifacts-'))
+  const calls = []
+  const currentUrl = 'http://127.0.0.1:3333/dashboard'
+  const expectedDir = path.join(artifactRoot, 'dashboard-shows-owner-stats', 'desktop')
+  const fakeVideo = {
+    async saveAs(target) {
+      calls.push(['video:saveAs', target])
+    },
+  }
+  const fakePage = {
+    url: () => currentUrl,
+    async screenshot(options) {
+      calls.push(['screenshot', options])
+    },
+    video: () => fakeVideo,
+  }
+
+  try {
+    const manager = createBrowserManager({
+      sails: {
+        config: {
+          appPath: '/tmp/app',
+          port: 3333,
+        },
+      },
+      getConfig: () => ({
+        browser: {
+          enabled: true,
+          projects: ['desktop'],
+          defaultProject: 'desktop',
+          artifacts: {
+            outputDir: artifactRoot,
+            screenshot: true,
+            trace: true,
+            video: true,
+            currentUrl: true,
+          },
+        },
+      }),
+      loadPlaywright: async () => ({
+        chromium: {
+          launch: async () => ({
+            newContext: async (contextOptions) => ({
+              contextOptions,
+              tracing: {
+                async start(options) {
+                  calls.push(['trace:start', options])
+                },
+                async stop(options) {
+                  calls.push(['trace:stop', options])
+                },
+              },
+              newPage: async () => fakePage,
+              close: async () => {
+                calls.push(['context:close'])
+              },
+            }),
+            close: async () => {
+              calls.push(['browser:close'])
+            },
+          }),
+        },
+        devices: {},
+      }),
+      loadPlaywrightTest: async () => null,
+    })
+
+    const session = await manager.open({ trialName: 'Dashboard shows owner stats' })
+    assert.equal(session.context.contextOptions.recordVideo.dir, expectedDir)
+
+    const artifacts = await session.captureFailureArtifacts()
+    await manager.close()
+
+    assert.equal(artifacts.outputDir, artifactRoot)
+    assert.equal(artifacts.directory, expectedDir)
+    assert.equal(artifacts.project, 'desktop')
+    assert.equal(artifacts.trialName, 'Dashboard shows owner stats')
+    assert.equal(artifacts.currentUrl, currentUrl)
+    assert.equal(artifacts.currentUrlPath, path.join(expectedDir, 'current-url.txt'))
+    assert.equal(artifacts.screenshot, path.join(expectedDir, 'screenshot.png'))
+    assert.equal(artifacts.trace, path.join(expectedDir, 'trace.zip'))
+    assert.equal(artifacts.video, path.join(expectedDir, 'video.webm'))
+    assert.deepEqual(artifacts.errors, [])
+    assert.equal(await fs.readFile(path.join(expectedDir, 'current-url.txt'), 'utf8'), `${currentUrl}\n`)
+    assert.deepEqual(calls, [
+      ['trace:start', { screenshots: true, snapshots: true, sources: true }],
+      [
+        'screenshot',
+        {
+          path: path.join(expectedDir, 'screenshot.png'),
+          fullPage: true,
+        },
+      ],
+      ['trace:stop', { path: path.join(expectedDir, 'trace.zip') }],
+      ['context:close'],
+      ['video:saveAs', path.join(expectedDir, 'video.webm')],
+      ['browser:close'],
+    ])
+  } finally {
+    await fs.rm(artifactRoot, { recursive: true, force: true })
+  }
 })
 
 test('createBrowserManager reports browser setup errors with stable codes', async () => {
