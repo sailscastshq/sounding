@@ -128,6 +128,34 @@ Auth convention: User
 Next: run npm install, then npm test.
 ```
 
+## CLI test runner
+
+Run a Sounding suite with the framework-level runner:
+
+```sh
+npx sounding test
+```
+
+The command discovers `.test.js` files under `tests/` and `test/`, then runs Node's native test runner with Sounding-friendly filters:
+
+```sh
+npx sounding test --grep "dashboard"
+npx sounding test --file tests/sounding/examples.test.js
+npx sounding test --lane browser
+npx sounding test --watch
+```
+
+Common Node test flags pass through, and CI reporters are available without memorizing the longer Node flag names:
+
+```sh
+npx sounding test --reporter spec
+npx sounding test --junit reports/sounding-junit.xml
+npx sounding test --json
+npx sounding test --coverage
+```
+
+Use `--dry-run` to inspect the exact `node --test` command before running it.
+
 ## Typing and editor support
 
 Sounding is JSDoc-first today. The public API types live beside the CommonJS source, with shared typedefs in `lib/types.js`, so JavaScript Sails apps get autocomplete and inline docs without a separate hand-maintained declaration surface.
