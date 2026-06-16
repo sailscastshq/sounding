@@ -1,5 +1,8 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
 
 const soundingHook = require('../index')
 const { createRuntime, resolveConfig } = require('../lib/create-runtime')
@@ -59,6 +62,129 @@ test('Sounding normalizes shorthand datastore config', () => {
   assert.equal(shorthand.datastore.mode, 'inherit')
   assert.equal(shorthand.datastore.root, '.tmp/db')
   assert.equal(shorthand.datastore.adapter, 'sails-sqlite')
+})
+
+test('createRuntime caches resolved config until Sails config changes or caches are invalidated', () => {
+  const sails = {
+    config: {
+      sounding: {
+        request: {
+          transport: 'virtual',
+        },
+      },
+    },
+    models: {},
+    helpers: {},
+  }
+  const runtime = createRuntime(sails)
+
+  assert.equal(runtime.cacheStats.config.resolutions, 0)
+
+  const first = runtime.config
+  const repeated = runtime.config
+
+  assert.equal(repeated, first)
+  assert.equal(runtime.cacheStats.config.resolutions, 1)
+
+  sails.config.sounding.request.transport = 'http'
+  const changed = runtime.config
+
+  assert.notEqual(changed, first)
+  assert.equal(changed.request.transport, 'http')
+  assert.equal(runtime.cacheStats.config.resolutions, 2)
+
+  runtime.invalidateCaches()
+  assert.equal(runtime.cacheStats.config.resolutions, 0)
+
+  const afterInvalidation = runtime.config
+
+  assert.notEqual(afterInvalidation, changed)
+  assert.equal(afterInvalidation.request.transport, 'http')
+  assert.equal(runtime.cacheStats.config.resolutions, 1)
+})
+
+test('createRuntime reuses cached world loading between repeated boots', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-runtime-worlds-'))
+  const factoriesDir = path.join(tempRoot, 'tests', 'factories')
+  const scenariosDir = path.join(tempRoot, 'tests', 'scenarios')
+
+  fs.mkdirSync(factoriesDir, { recursive: true })
+  fs.mkdirSync(scenariosDir, { recursive: true })
+  fs.writeFileSync(
+    path.join(factoriesDir, 'user.js'),
+    "module.exports = ({ factory }) => factory('user', { email: 'reader@example.com' })\n"
+  )
+  fs.writeFileSync(
+    path.join(scenariosDir, 'signed-in-user.js'),
+    "module.exports = ({ scenario }) => scenario('signed-in-user', ({ build }) => ({ user: build('user') }))\n"
+  )
+
+  const runtime = createRuntime({
+    config: {
+      appPath: tempRoot,
+      datastores: {
+        default: {
+          adapter: 'sails-sqlite',
+          url: '.tmp/test.db',
+        },
+      },
+      sounding: {
+        datastore: 'inherit',
+        world: {
+          factories: 'tests/factories',
+          scenarios: 'tests/scenarios',
+        },
+      },
+    },
+    models: {},
+    helpers: {},
+  })
+
+  await runtime.boot()
+  assert.deepEqual(runtime.cacheStats, {
+    config: {
+      resolutions: 1,
+    },
+    worldLoader: {
+      directoryScans: 2,
+      moduleLoads: 2,
+    },
+  })
+  assert.deepEqual(runtime.world.factories, ['user'])
+  assert.deepEqual(runtime.world.scenarios, ['signed-in-user'])
+
+  await runtime.lower()
+  await runtime.boot()
+
+  assert.deepEqual(runtime.cacheStats, {
+    config: {
+      resolutions: 1,
+    },
+    worldLoader: {
+      directoryScans: 2,
+      moduleLoads: 2,
+    },
+  })
+  assert.deepEqual(runtime.world.factories, ['user'])
+  assert.deepEqual(runtime.world.scenarios, ['signed-in-user'])
+
+  await runtime.lower()
+  runtime.invalidateCaches()
+  await runtime.boot()
+
+  assert.deepEqual(runtime.cacheStats, {
+    config: {
+      resolutions: 1,
+    },
+    worldLoader: {
+      directoryScans: 2,
+      moduleLoads: 2,
+    },
+  })
+  assert.deepEqual(runtime.world.factories, ['user'])
+  assert.deepEqual(runtime.world.scenarios, ['signed-in-user'])
+
+  await runtime.lower()
 })
 
 test('resolveDatastore reports configuration errors with stable codes', () => {
