@@ -204,6 +204,14 @@ appManager.resolveConfig().request.transport = 'virtual'
 appManager.runtime({ http: true }).then((activeRuntime) => {
   activeRuntime.request.using('http')
 })
+appManager.runtime({ app: 'load', reload: true }).then((activeRuntime) => {
+  activeRuntime.request.using('virtual')
+})
+appManager.runtime({ transport: 'http' }).then((activeRuntime) => {
+  activeRuntime.request.using('http')
+})
+appManager.lifecycle.load.status.toUpperCase()
+appManager.lifecycle.lift.durationMs?.toFixed()
 
 const worldEngine = createWorldEngine({ sails: fakeSails })
 const userFactory = defineFactory('member', ({ sequence }) => ({
