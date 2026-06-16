@@ -1,0 +1,98 @@
+#!/usr/bin/env node
+
+const { initProject } = require('../lib/init-project')
+
+function printHelp() {
+  process.stdout.write(`Sounding
+
+Usage:
+  sounding init [--app <path>] [--config]
+
+Commands:
+  init      Scaffold Sounding tests, worlds, and package scripts in a Sails app.
+
+Options:
+  --app     Target app directory. Defaults to the current working directory.
+  --config  Also create config/sounding.js when it does not already exist.
+  --help    Show this help.
+`)
+}
+
+function parseArgs(argv) {
+  const args = [...argv]
+  const options = {}
+  const command = args.shift()
+
+  if (command === '--help' || command === '-h') {
+    return {
+      command: null,
+      options: {
+        help: true,
+      },
+    }
+  }
+
+  while (args.length > 0) {
+    const arg = args.shift()
+
+    if (arg === '--help' || arg === '-h') {
+      options.help = true
+      continue
+    }
+
+    if (arg === '--config') {
+      options.config = true
+      continue
+    }
+
+    if (arg === '--app') {
+      options.appPath = args.shift()
+      if (!options.appPath) {
+        throw new Error('Sounding option `--app` requires a path.')
+      }
+      continue
+    }
+
+    throw new Error(`Unknown Sounding option: ${arg}`)
+  }
+
+  return {
+    command,
+    options,
+  }
+}
+
+function printInitResult(result) {
+  process.stdout.write(`Sounding initialized ${result.appPath}\n`)
+  process.stdout.write(
+    `Auth convention: ${result.auth.modelName}${result.auth.detected ? '' : ' (default)'}\n`
+  )
+
+  for (const action of result.actions) {
+    const marker = action.type === 'created' ? '+' : action.type === 'updated' ? '~' : '-'
+    process.stdout.write(`${marker} ${action.message}\n`)
+  }
+
+  process.stdout.write('\nNext: run npm install, then npm test.\n')
+}
+
+async function main() {
+  const { command, options } = parseArgs(process.argv.slice(2))
+
+  if (!command || options.help) {
+    printHelp()
+    return
+  }
+
+  if (command !== 'init') {
+    throw new Error(`Unknown Sounding command: ${command}`)
+  }
+
+  const result = initProject(options)
+  printInitResult(result)
+}
+
+main().catch((error) => {
+  process.stderr.write(`${error.message}\n`)
+  process.exitCode = 1
+})

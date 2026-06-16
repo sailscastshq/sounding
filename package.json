@@ -3,6 +3,9 @@
   "version": "0.0.4",
   "description": "Testing framework for Sails applications and The Boring JavaScript Stack.",
   "main": "index.js",
+  "bin": {
+    "sounding": "bin/sounding.js"
+  },
   "license": "MIT",
   "keywords": [
     "sails",
@@ -12,6 +15,7 @@
     "tbjs"
   ],
   "files": [
+    "bin",
     "index.js",
     "lib",
     "README.md",

@@ -96,6 +96,38 @@ module.exports.sounding = {
 
 If you intentionally want Sounding during another boot path, widen the list explicitly, for example `['test', 'console']` or `['test', 'production']`.
 
+## Project init
+
+Use the initializer from a Sails app to add the first Sounding test lane:
+
+```sh
+npx sounding init
+```
+
+It updates `package.json`, creates `tests/factories`, `tests/scenarios`, and `tests/sounding`, and writes starter examples without overwriting existing files. The default setup relies on Sounding's built-in conventions, so it skips `config/sounding.js` unless you ask for an editable config scaffold:
+
+```sh
+npx sounding init --config
+```
+
+Typical output looks like:
+
+```txt
+Sounding initialized /path/to/my-sails-app
+Auth convention: User
+~ Updated package.json (added `npm test`, added `sounding` devDependency, added `sails-sqlite` devDependency)
++ Created tests
++ Created tests/factories
++ Created tests/scenarios
++ Created tests/sounding
++ Created tests/factories/user.js
++ Created tests/scenarios/signed-in-user.js
++ Created tests/sounding/examples.test.js
+- Skipped config/sounding.js because Sounding defaults are enough
+
+Next: run npm install, then npm test.
+```
+
 ## Typing and editor support
 
 Sounding is JSDoc-first today. The public API types live beside the CommonJS source, with shared typedefs in `lib/types.js`, so JavaScript Sails apps get autocomplete and inline docs without a separate hand-maintained declaration surface.
