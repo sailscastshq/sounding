@@ -27,6 +27,7 @@ The canonical Sails-native surface is:
 - Inertia-style visits can use `visit('/pricing')` and partial reload options like `{ component, only }`
 - mail assertions can check captured emails with `expect(mailbox).toHaveSentMail({ to, subject })` and `expect(mailbox.latest()).toHaveCtaUrl(/magic-link/)`
 - a trial can opt into stricter parity with `test('...', { transport: 'http' }, ...)`
+- independent trials can opt into concurrent execution with `test('...', { concurrent: true }, ...)` or `test.concurrent(...)`
 - any trial can also scope a request client with `sails.sounding.request.using('http')`
 
 Sounding also owns its own built-in world engine, so the same package can:
@@ -155,6 +156,30 @@ npx sounding test --coverage
 ```
 
 Use `--dry-run` to inspect the exact `node --test` command before running it.
+
+## Concurrent trials
+
+Sounding runs trials serially by default. That keeps shared Sails app state boring while request sessions, worlds, mailboxes, sockets, and browser sessions continue to reset between trials.
+
+Independent trials can opt into Node test concurrency:
+
+```js
+test.concurrent('health check is isolated', async ({ get, expect }) => {
+  const response = await get('/health')
+
+  expect(response).toHaveStatus(200)
+})
+
+test('dashboard contract is isolated too', { concurrent: true }, async ({ visit, expect }) => {
+  const page = await visit('/dashboard')
+
+  expect(page).toBeInertiaPage('dashboard/index')
+})
+```
+
+Concurrent Sounding trials bypass the global serial queue and receive isolated runtime state. Their request session, mailbox, world, sockets, and browser manager are separate from other concurrent trials. Managed SQLite datastore paths remain isolated by worker using `.tmp/db/<identity>/worker-<token>.db`, where the worker token comes from `SOUNDING_WORKER_INDEX`, `PLAYWRIGHT_WORKER_INDEX`, `TEST_WORKER_INDEX`, or the process id.
+
+Use concurrent mode for trials that do not mutate process-global app state. If you build a custom `createTestApi({ runtime })`, pass a runtime factory such as `() => createRuntime(sails)` for concurrent trials; a single shared runtime object stays serial-only.
 
 ## Typing and editor support
 

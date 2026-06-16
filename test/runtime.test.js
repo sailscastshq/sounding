@@ -547,6 +547,19 @@ test('buildManagedSqlitePath uses the worker token by default', () => {
   assert.equal(filePath, '/tmp/default/worker-4.db')
 })
 
+test('buildManagedSqlitePath lets Sounding worker tokens isolate concurrent lanes', () => {
+  const filePath = buildManagedSqlitePath({
+    root: '/tmp',
+    identity: 'default',
+    env: {
+      SOUNDING_WORKER_INDEX: 'ci-2',
+      PLAYWRIGHT_WORKER_INDEX: '4',
+    },
+  })
+
+  assert.equal(filePath, '/tmp/default/worker-ci-2.db')
+})
+
 test('the hook exposes sails.sounding and sails.hooks.sounding', async () => {
   const sails = {
     config: {
