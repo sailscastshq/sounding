@@ -1,23 +1,153 @@
 // @ts-check
 
-const {
-  createExpect,
-  createRequestClient,
-  createWorldEngine,
-  createSocketManager,
-  createVisitClient,
-  test,
-} = require('../index')
+const sounding = require('../index')
 
-const request = createRequestClient({
-  sails: {
-    config: {
-      sounding: {},
+const {
+  createAppManager,
+  createAuthHelpers,
+  createBrowserManager,
+  createExpect,
+  createHelperRunner,
+  createMailbox,
+  createMailCapture,
+  createRequestClient,
+  createSocketManager,
+  createTestApi,
+  createVisitClient,
+  createWorldEngine,
+  createRuntime,
+  defineFactory,
+  defineScenario,
+  getDefaultConfig,
+  loadWorldFiles,
+  test,
+} = sounding
+
+const defaultConfig = getDefaultConfig()
+defaultConfig.request.transport = 'http'
+// @ts-expect-error Sounding config only supports virtual and http transports.
+defaultConfig.request.transport = 'ftp'
+defaultConfig.request.transport = 'virtual'
+
+const fakePage = {
+  goto() {},
+  fill() {},
+  click() {},
+}
+
+const fakeSails = {
+  config: {
+    appPath: process.cwd(),
+    environment: 'test',
+    sounding: defaultConfig,
+  },
+  router: {
+    route() {},
+  },
+  hooks: {
+    http: {
+      server: {
+        address() {
+          return {
+            address: '127.0.0.1',
+            port: 1337,
+          }
+        },
+      },
     },
-    router: {
-      route() {},
+    sockets: {},
+  },
+  io: {},
+  sockets: {},
+  helpers: {
+    user: {
+      signupWithTeam: {
+        with(inputs) {
+          return Promise.resolve({
+            user: {
+              id: 1,
+              email: inputs.email,
+              fullName: inputs.fullName,
+            },
+          })
+        },
+      },
+    },
+    magicLink: {
+      generateToken() {
+        return 'token'
+      },
+      hashToken(token) {
+        return `hashed-${token}`
+      },
+    },
+    mail: {
+      send: {
+        with() {
+          return Promise.resolve({})
+        },
+      },
     },
   },
+  models: {
+    user: {
+      findOne(criteria) {
+        return Promise.resolve({
+          id: criteria.id || 1,
+          email: criteria.email || 'owner@example.com',
+        })
+      },
+      updateOne() {
+        return {
+          set() {
+            return Promise.resolve({})
+          },
+        }
+      },
+    },
+  },
+  request() {},
+  renderView() {
+    return Promise.resolve('<a href="https://example.com/welcome">Welcome</a>')
+  },
+}
+
+const hook = sounding(fakeSails)
+hook.configure()
+hook.initialize((error) => {
+  if (error) {
+    throw error
+  }
+})
+
+const mailbox = createMailbox()
+const captured = mailbox.capture({
+  to: 'reader@example.com',
+  subject: 'Welcome',
+  ctaUrl: 'https://example.com/welcome',
+})
+createExpect(mailbox).toHaveSentCount(1)
+createExpect(mailbox.latest()).toHaveCtaUrl(/welcome/)
+captured.subject?.toUpperCase()
+
+const mailCapture = createMailCapture({
+  sails: fakeSails,
+  mailbox,
+  getConfig: () => defaultConfig,
+})
+mailCapture.install()
+if (mailCapture.installed) {
+  mailCapture.uninstall()
+}
+
+const helper = createHelperRunner({ sails: fakeSails })
+helper('user.signupWithTeam', {
+  email: 'reader@example.com',
+}).then((result) => result)
+
+const request = createRequestClient({
+  sails: fakeSails,
+  getConfig: () => defaultConfig,
 })
 
 request
@@ -50,7 +180,43 @@ visit('/dashboard', {
   })
 })
 
-const worldEngine = createWorldEngine({ sails: { models: {} } })
+const runtime = createRuntime(fakeSails)
+runtime.configure()
+runtime.request.using('virtual').get('/runtime-health')
+runtime.boot({ mode: 'trial' }).then((booted) => {
+  booted.request.using('http')
+  booted.login.withPassword('owner@example.com', fakePage, {
+    password: 'secret123',
+  })
+})
+
+const appManager = createAppManager({
+  appPath: process.cwd(),
+  environment: 'test',
+  liftOptions: {
+    port: 0,
+  },
+})
+appManager.resolveConfig().request.transport = 'virtual'
+appManager.runtime({ http: true }).then((activeRuntime) => {
+  activeRuntime.request.using('http')
+})
+
+const worldEngine = createWorldEngine({ sails: fakeSails })
+const userFactory = defineFactory('member', ({ sequence }) => ({
+  email: sequence('member-email', (next) => `member-${next}@example.com`),
+  role: 'member',
+})).trait('admin', {
+  role: 'admin',
+})
+const signedInScenario = defineScenario('signed-in-member', async ({ create, context }) => ({
+  users: {
+    member: await create('member').trait(context.role || 'admin'),
+  },
+}))
+
+worldEngine.register(userFactory)
+worldEngine.register(signedInScenario)
 worldEngine.defineFactory('user', {
   email: 'reader@example.com',
   role: 'reader',
@@ -66,28 +232,54 @@ worldEngine
   .then((user) => user)
 
 const sockets = createSocketManager({
-  sails: {
-    config: {
-      sounding: {},
-    },
-    hooks: {
-      http: {
-        server: {
-          address() {
-            return {
-              address: '127.0.0.1',
-              port: 1337,
-            }
-          },
-        },
-      },
-    },
-  },
+  sails: fakeSails,
+  getConfig: () => defaultConfig,
+  world: worldEngine,
 })
 
 sockets.connect({ timeout: 100 }).then(async (socket) => {
   await socket.post('/rooms/join', { room: 'lobby' })
   await createExpect(socket).toReceive('chat:message', { room: 'lobby' })
+})
+
+const browser = createBrowserManager({
+  sails: fakeSails,
+  getConfig: () => defaultConfig,
+})
+browser.open({ project: 'desktop', artifacts: false }).then(async (session) => {
+  await session.captureFailureArtifacts()
+})
+
+const auth = createAuthHelpers({
+  sails: fakeSails,
+  world: worldEngine,
+  mailbox,
+  request,
+})
+auth.resolveActor('owner@example.com').then((actor) => actor.email)
+auth.request
+  .withPassword('owner@example.com', {
+    password: 'secret123',
+    request,
+  })
+  .then((result) => result.response)
+auth.login
+  .withPassword('owner@example.com', fakePage, {
+    password: 'secret123',
+  })
+  .then((result) => result.actor)
+
+loadWorldFiles({
+  world: worldEngine,
+  appPath: process.cwd(),
+  config: defaultConfig,
+  sails: fakeSails,
+}).then((loadedFiles) => loadedFiles.map((filePath) => filePath.toUpperCase()))
+
+const localTest = createTestApi({ runtime: () => runtime })
+localTest.endpoint('typed endpoint alias', async ({ get, expect }) => {
+  const response = await get('/health')
+  expect(response).toHaveStatus(200)
 })
 
 test('trial callback context is typed from JSDoc', async ({ get, expect, request, sockets }) => {
@@ -113,3 +305,9 @@ test(
 )
 
 test('world string options are typed from JSDoc', { world: 'signed-in-user' }, async () => {})
+
+// @ts-expect-error Trial options only support virtual and http transports.
+test('invalid transport options are caught by public JSDoc', { transport: 'ftp' }, async () => {})
+
+// @ts-expect-error Factory definitions must be an object or factory callback.
+defineFactory('broken-factory', 123)
