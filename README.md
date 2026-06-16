@@ -18,6 +18,7 @@ The canonical Sails-native surface is:
 - `await auth.request.withPassword('creator@example.com', { password: 'secret123' })` inside request trials
 - `test('...', { world: 'signed-in-user' }, async ({ request }) => {})` can auto-load named worlds before the handler runs
 - `request.as('owner')` and `visit.as('owner')` can resolve actor aliases from the current world
+- `test('...', { browser: 'mobile' }, async ({ page }) => {})` can select a named browser project without extra ceremony
 - failed browser trials capture the current URL and a full-page screenshot under `.tmp/sounding/artifacts`
 - request helpers default to Sails virtual requests powered by `sails.request()`
 - virtual request responses expose the final `req.session` snapshot as `response.session`; HTTP responses leave it undefined
@@ -79,6 +80,7 @@ The default configuration story is intentionally calm:
 - managed SQLite artifacts live under `.tmp/db`
 - the default datastore identity is `default`
 - browser projects start with `desktop`
+- browser projects can be strings or named project objects with `type`, `device`, `viewport`, `contextOptions`, and `launchOptions`
 - browser failure artifacts store screenshots and current URLs by default, while traces and videos are opt-in
 - mail capture previews use the `mail` layout by default, matching the current `sails-hook-mail` convention
 - apps with a different mail layout can set `sounding.mail.layout`, for example `layout-email`
@@ -93,6 +95,48 @@ module.exports.sounding = {
 ```
 
 If you intentionally want Sounding during another boot path, widen the list explicitly, for example `['test', 'console']` or `['test', 'production']`.
+
+## Browser projects
+
+Browser trials start on the `desktop` project:
+
+```js
+test('subscriber can read a gated issue', { browser: true }, async ({ page }) => {
+  await page.goto('/issues/the-nerve-to-build')
+})
+```
+
+Use a string when a trial needs a named project:
+
+```js
+test('mobile navigation opens the account menu', { browser: 'mobile' }, async ({ page }) => {
+  await page.goto('/dashboard')
+})
+```
+
+Configure named projects in `config/sounding.js` when an app needs mobile devices, WebKit, or custom context options:
+
+```js
+module.exports.sounding = {
+  browser: {
+    projects: {
+      desktop: {},
+      mobile: {
+        device: 'iPhone 13'
+      },
+      safari: {
+        type: 'webkit',
+        viewport: {
+          width: 1280,
+          height: 720
+        }
+      }
+    }
+  }
+}
+```
+
+The object form stays Sails-simple while still passing through to Playwright where it matters.
 
 ## Browser failure artifacts
 

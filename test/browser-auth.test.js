@@ -76,6 +76,185 @@ test('createBrowserManager opens a browser session with the configured base URL'
   ])
 })
 
+test('createBrowserManager resolves mobile and custom browser projects', async () => {
+  const calls = []
+  const fakePage = {}
+  const devices = {
+    'Pixel 7': {
+      viewport: {
+        width: 412,
+        height: 915,
+      },
+      isMobile: true,
+      hasTouch: true,
+    },
+  }
+  const createBrowserType = (name) => ({
+    launch: async (launchOptions) => {
+      calls.push([`${name}:launch`, launchOptions])
+
+      return {
+        newContext: async (contextOptions) => {
+          calls.push([`${name}:context`, contextOptions])
+
+          return {
+            contextOptions,
+            newPage: async () => fakePage,
+            close: async () => {
+              calls.push([`${name}:context:close`])
+            },
+          }
+        },
+        close: async () => {
+          calls.push([`${name}:browser:close`])
+        },
+      }
+    },
+  })
+  const config = {
+    browser: {
+      enabled: true,
+      type: 'chromium',
+      projects: {
+        desktop: {},
+        mobile: {
+          device: 'Pixel 7',
+        },
+        safari: {
+          type: 'webkit',
+          viewport: {
+            width: 1280,
+            height: 720,
+          },
+          contextOptions: {
+            colorScheme: 'dark',
+          },
+          launchOptions: {
+            slowMo: 25,
+          },
+        },
+      },
+      defaultProject: 'desktop',
+      launchOptions: {
+        timeout: 5000,
+      },
+    },
+  }
+
+  const createManager = () =>
+    createBrowserManager({
+      sails: {
+        config: {
+          appPath: '/tmp/app',
+          port: 3333,
+        },
+      },
+      getConfig: () => config,
+      loadPlaywright: async () => ({
+        chromium: createBrowserType('chromium'),
+        webkit: createBrowserType('webkit'),
+        devices,
+      }),
+      loadPlaywrightTest: async () => null,
+    })
+
+  const mobileManager = createManager()
+  const mobileSession = await mobileManager.open({ project: 'mobile' })
+  assert.equal(mobileSession.project, 'mobile')
+  assert.equal(mobileSession.page, fakePage)
+  await mobileManager.close()
+
+  const safariManager = createManager()
+  const safariSession = await safariManager.open({
+    project: 'safari',
+    contextOptions: {
+      timezoneId: 'Africa/Lagos',
+    },
+    launchOptions: {
+      timeout: 1000,
+    },
+  })
+  assert.equal(safariSession.project, 'safari')
+  await safariManager.close()
+
+  assert.deepEqual(calls, [
+    ['chromium:launch', { headless: true, timeout: 5000 }],
+    [
+      'chromium:context',
+      {
+        baseURL: 'http://127.0.0.1:3333',
+        viewport: {
+          width: 412,
+          height: 915,
+        },
+        isMobile: true,
+        hasTouch: true,
+      },
+    ],
+    ['chromium:context:close'],
+    ['chromium:browser:close'],
+    ['webkit:launch', { headless: true, timeout: 1000, slowMo: 25 }],
+    [
+      'webkit:context',
+      {
+        baseURL: 'http://127.0.0.1:3333',
+        viewport: {
+          width: 1280,
+          height: 720,
+        },
+        colorScheme: 'dark',
+        timezoneId: 'Africa/Lagos',
+      },
+    ],
+    ['webkit:context:close'],
+    ['webkit:browser:close'],
+  ])
+})
+
+test('createBrowserManager reports unknown browser projects with available names', async () => {
+  const manager = createBrowserManager({
+    sails: {
+      config: {
+        appPath: '/tmp/app',
+        port: 3333,
+      },
+    },
+    getConfig: () => ({
+      browser: {
+        enabled: true,
+        projects: {
+          desktop: {},
+          mobile: {
+            device: 'iPhone 13',
+          },
+        },
+        defaultProject: 'desktop',
+      },
+    }),
+    loadPlaywright: async () => ({
+      chromium: {
+        launch: async () => {
+          throw new Error('browser should not launch for unknown projects')
+        },
+      },
+      devices: {},
+    }),
+    loadPlaywrightTest: async () => null,
+  })
+
+  await assert.rejects(
+    async () => {
+      await manager.open({ project: 'tablet' })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_BROWSER_PROJECT_UNAVAILABLE')
+      assert.equal(error.project, 'tablet')
+      assert.deepEqual(error.availableProjects, ['desktop', 'mobile'])
+      return true
+    }
+  )
+})
+
 test('createBrowserManager captures failure artifacts with stable browser paths', async () => {
   const artifactRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'sounding-artifacts-'))
   const calls = []

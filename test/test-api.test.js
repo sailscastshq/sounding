@@ -468,7 +468,7 @@ test('test.only() runs focused trials through the Sounding wrapper', async () =>
     {
       transport: 'http',
       world: 'focused-dashboard',
-      browser: { project: 'desktop' },
+      browser: 'desktop',
       timeout: 500,
     },
     async ({ sails, get, request, visit, page, expect }) => {
@@ -662,13 +662,26 @@ test('test() reports malformed trial arguments with stable codes', () => {
 
   assert.throws(
     () => {
-      soundingTest('bad browser', { browser: 'mobile' }, async () => {})
+      soundingTest('bad browser', { browser: 42 }, async () => {})
     },
     (error) => {
       assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
       assert.equal(error.path, 'options.browser')
-      assert.equal(error.value, 'mobile')
-      assert.match(error.suggestion, /browser: true/)
+      assert.equal(error.value, 42)
+      assert.match(error.suggestion, /browser: "mobile"/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest('empty browser project', { browser: '' }, async () => {})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.browser')
+      assert.equal(error.value, '')
+      assert.match(error.suggestion, /browser: "mobile"/)
       return true
     }
   )

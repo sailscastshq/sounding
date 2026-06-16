@@ -73,7 +73,92 @@ test('resolveConfig names invalid browser fields precisely', () => {
       assert.equal(error.code, 'E_SOUNDING_CONFIG_INVALID')
       assert.equal(error.path, 'sounding.browser.projects[1]')
       assert.equal(error.value, 42)
-      assert.match(error.message, /must be a string/)
+      assert.match(error.message, /must be an object/)
+      return true
+    }
+  )
+})
+
+test('resolveConfig validates named browser projects', () => {
+  const config = resolveConfig({
+    config: {
+      sounding: {
+        browser: {
+          projects: {
+            desktop: {},
+            mobile: {
+              device: 'iPhone 13',
+            },
+            safari: {
+              type: 'webkit',
+              viewport: {
+                width: 1280,
+                height: 720,
+              },
+              contextOptions: {
+                colorScheme: 'dark',
+              },
+              launchOptions: {
+                slowMo: 25,
+              },
+            },
+          },
+          defaultProject: 'safari',
+        },
+      },
+    },
+  })
+
+  assert.equal(config.browser.defaultProject, 'safari')
+  assert.equal(config.browser.projects.safari.type, 'webkit')
+  assert.equal(config.browser.projects.mobile.device, 'iPhone 13')
+
+  assert.throws(
+    () => {
+      resolveConfig({
+        config: {
+          sounding: {
+            browser: {
+              projects: {
+                desktop: {},
+              },
+              defaultProject: 'mobile',
+            },
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_CONFIG_INVALID')
+      assert.equal(error.path, 'sounding.browser.defaultProject')
+      assert.equal(error.value, 'mobile')
+      assert.deepEqual(error.allowed, ['desktop'])
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      resolveConfig({
+        config: {
+          sounding: {
+            browser: {
+              projects: {
+                safari: {
+                  type: 'safari',
+                },
+              },
+              defaultProject: 'safari',
+            },
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_CONFIG_INVALID')
+      assert.equal(error.path, 'sounding.browser.projects.safari.type')
+      assert.equal(error.value, 'safari')
+      assert.deepEqual(error.allowed, ['chromium', 'firefox', 'webkit'])
       return true
     }
   )
