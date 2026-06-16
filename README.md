@@ -157,6 +157,37 @@ npx sounding test --coverage
 
 Use `--dry-run` to inspect the exact `node --test` command before running it.
 
+## App lifecycle
+
+Sounding keeps a warm Sails app by default. Virtual request trials load the app without opening an HTTP listener, while HTTP, socket, and browser-capable trials lift the app so the network stack exists.
+
+The app manager makes those lanes explicit:
+
+```js
+const { createAppManager } = require('sounding')
+
+const manager = createAppManager()
+
+const virtualRuntime = await manager.runtime({ app: 'load' })
+const httpRuntime = await manager.runtime({ app: 'lift' })
+const alsoHttpRuntime = await manager.runtime({ transport: 'http' })
+```
+
+Use the warm default for most suites. When a trial mutates process-global app state and needs a fresh Sails instance, force a reload:
+
+```js
+const freshRuntime = await manager.runtime({ app: 'load', reload: true })
+```
+
+Lifecycle timings are available for diagnostics:
+
+```js
+console.log(manager.lifecycle.load.durationMs)
+console.log(manager.lifecycle.lift.status)
+```
+
+Set `SOUNDING_LIFECYCLE=verbose` or `SOUNDING_DIAGNOSTICS=verbose` to print app load/lift timing messages while the suite runs.
+
 ## Concurrent trials
 
 Sounding runs trials serially by default. That keeps shared Sails app state boring while request sessions, worlds, mailboxes, sockets, and browser sessions continue to reset between trials.
