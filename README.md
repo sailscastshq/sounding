@@ -96,6 +96,18 @@ module.exports.sounding = {
 
 If you intentionally want Sounding during another boot path, widen the list explicitly, for example `['test', 'console']` or `['test', 'production']`.
 
+## Typing and editor support
+
+Sounding is JSDoc-first today. The public API types live beside the CommonJS source, with shared typedefs in `lib/types.js`, so JavaScript Sails apps get autocomplete and inline docs without a separate hand-maintained declaration surface.
+
+The type smoke test in `typecheck/public-api-smoke.js` checks the exported API that consumers use: `test()`, request and visit clients, worlds, mail, auth, browser, socket helpers, runtime factories, and default config. Run it with:
+
+```sh
+npm run typecheck
+```
+
+Sounding does not ship hand-written `.d.ts` files right now. If TypeScript consumers need declaration files later, they should be generated from the JSDoc source of truth and verified against the same public API smoke test.
+
 ## Browser projects
 
 Browser trials start on the `desktop` project:
