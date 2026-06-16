@@ -182,6 +182,9 @@ visit('/dashboard', {
 
 const runtime = createRuntime(fakeSails)
 runtime.configure()
+runtime.cacheStats.config.resolutions.toFixed()
+runtime.cacheStats.worldLoader.moduleLoads.toFixed()
+runtime.invalidateCaches()
 runtime.request.using('virtual').get('/runtime-health')
 runtime.boot({ mode: 'trial' }).then((booted) => {
   booted.request.using('http')

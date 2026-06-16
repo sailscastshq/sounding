@@ -5,7 +5,41 @@ const os = require('node:os')
 const path = require('node:path')
 
 const { createWorldEngine } = require('../lib/create-world-engine')
-const { loadWorldFiles } = require('../lib/create-world-loader')
+const { createWorldLoaderCache, loadWorldFiles } = require('../lib/create-world-loader')
+
+let moduleTimestamp = Date.now()
+
+function writeModule(filePath, source, options = {}) {
+  fs.writeFileSync(filePath, source)
+
+  moduleTimestamp += 2000
+  const timestamp = new Date(moduleTimestamp)
+  fs.utimesSync(filePath, timestamp, timestamp)
+
+  if (options.touchDirectory) {
+    fs.utimesSync(path.dirname(filePath), timestamp, timestamp)
+  }
+}
+
+function createWorldLoadInput(tempRoot, cache) {
+  const world = createWorldEngine({ sails: {} })
+
+  return {
+    world,
+    input: {
+      world,
+      appPath: tempRoot,
+      config: {
+        world: {
+          factories: 'tests/factories',
+          scenarios: 'tests/scenarios',
+        },
+      },
+      sails: {},
+      cache,
+    },
+  }
+}
 
 test('loadWorldFiles discovers factory and scenario definitions from tests/', async () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-worlds-'))
@@ -45,6 +79,112 @@ test('loadWorldFiles discovers factory and scenario definitions from tests/', as
   const current = await world.use('issue-access')
   assert.equal(current.users.subscriber.role, 'subscriber')
   assert.match(current.users.subscriber.email, /^user\d+@example.com$/)
+})
+
+test('loadWorldFiles reuses cached directory scans and module loads for unchanged worlds', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-worlds-'))
+  const factoriesDir = path.join(tempRoot, 'tests', 'factories')
+  const scenariosDir = path.join(tempRoot, 'tests', 'scenarios')
+
+  fs.mkdirSync(factoriesDir, { recursive: true })
+  fs.mkdirSync(scenariosDir, { recursive: true })
+
+  for (let index = 0; index < 12; index += 1) {
+    writeModule(
+      path.join(factoriesDir, `entity-${index}.js`),
+      `module.exports = ({ factory }) => factory('entity${index}', { index: ${index} })\n`
+    )
+  }
+
+  for (let index = 0; index < 8; index += 1) {
+    writeModule(
+      path.join(scenariosDir, `scenario-${index}.js`),
+      `module.exports = ({ scenario }) => scenario('scenario${index}', () => ({ index: ${index} }))\n`
+    )
+  }
+
+  const cache = createWorldLoaderCache()
+  const first = createWorldLoadInput(tempRoot, cache)
+  const firstLoaded = await loadWorldFiles(first.input)
+
+  assert.equal(firstLoaded.length, 20)
+  assert.equal(cache.stats.directoryScans, 2)
+  assert.equal(cache.stats.moduleLoads, 20)
+  assert.equal(first.world.factories.length, 12)
+  assert.equal(first.world.scenarios.length, 8)
+
+  const second = createWorldLoadInput(tempRoot, cache)
+  const secondLoaded = await loadWorldFiles(second.input)
+
+  assert.equal(secondLoaded.length, 20)
+  assert.equal(cache.stats.directoryScans, 2)
+  assert.equal(cache.stats.moduleLoads, 20)
+  assert.deepEqual(second.world.build('entity4'), { index: 4 })
+})
+
+test('loadWorldFiles invalidates changed modules, changed directories, and explicit cache clears', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-worlds-'))
+  const factoriesDir = path.join(tempRoot, 'tests', 'factories')
+  const scenariosDir = path.join(tempRoot, 'tests', 'scenarios')
+  const userFactory = path.join(factoriesDir, 'user.js')
+
+  fs.mkdirSync(factoriesDir, { recursive: true })
+  fs.mkdirSync(scenariosDir, { recursive: true })
+
+  writeModule(
+    userFactory,
+    "module.exports = ({ factory }) => factory('user', { role: 'reader' })\n"
+  )
+  writeModule(
+    path.join(scenariosDir, 'member-access.js'),
+    "module.exports = ({ scenario }) => scenario('member-access', ({ build }) => ({ user: build('user') }))\n"
+  )
+
+  const cache = createWorldLoaderCache()
+  const first = createWorldLoadInput(tempRoot, cache)
+  await loadWorldFiles(first.input)
+
+  assert.equal(cache.stats.directoryScans, 2)
+  assert.equal(cache.stats.moduleLoads, 2)
+  assert.deepEqual(first.world.build('user'), { role: 'reader' })
+
+  const unchanged = createWorldLoadInput(tempRoot, cache)
+  await loadWorldFiles(unchanged.input)
+
+  assert.equal(cache.stats.directoryScans, 2)
+  assert.equal(cache.stats.moduleLoads, 2)
+
+  writeModule(
+    userFactory,
+    "module.exports = ({ factory }) => factory('user', { role: 'writer' })\n"
+  )
+
+  const changedModule = createWorldLoadInput(tempRoot, cache)
+  await loadWorldFiles(changedModule.input)
+
+  assert.equal(cache.stats.directoryScans, 2)
+  assert.equal(cache.stats.moduleLoads, 3)
+  assert.deepEqual(changedModule.world.build('user'), { role: 'writer' })
+
+  writeModule(
+    path.join(scenariosDir, 'admin-access.js'),
+    "module.exports = ({ scenario }) => scenario('admin-access', () => ({ role: 'admin' }))\n",
+    { touchDirectory: true }
+  )
+
+  const changedDirectory = createWorldLoadInput(tempRoot, cache)
+  await loadWorldFiles(changedDirectory.input)
+
+  assert.equal(cache.stats.directoryScans, 3)
+  assert.equal(cache.stats.moduleLoads, 4)
+  assert.deepEqual(changedDirectory.world.scenarios.sort(), ['admin-access', 'member-access'])
+
+  cache.clear()
+  const afterClear = createWorldLoadInput(tempRoot, cache)
+  await loadWorldFiles(afterClear.input)
+
+  assert.equal(cache.stats.directoryScans, 2)
+  assert.equal(cache.stats.moduleLoads, 3)
 })
 
 test('createWorldEngine builders merge overrides and keep withOnly available', async () => {
