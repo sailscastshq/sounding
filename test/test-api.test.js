@@ -1,7 +1,9 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
+const { setTimeout: delay } = require('node:timers/promises')
 
 const { createTestApi } = require('../lib/create-test-api')
+const { createRuntime } = require('../lib/create-runtime')
 
 test('test() boots the runtime and passes a Sails-native helper context', async () => {
   const calls = []
@@ -306,6 +308,226 @@ test('test() can auto-load a world before the trial handler', async () => {
     ['request:get', '/issues/first'],
     ['lower'],
   ])
+})
+
+test('test() can opt into concurrent isolated runtime factories', async () => {
+  const registrations = []
+  const seenRuntimeIds = []
+  let nextRuntimeId = 0
+  let activeBoots = 0
+  let maxActiveBoots = 0
+
+  function createIsolatedRuntime() {
+    nextRuntimeId += 1
+    const id = nextRuntimeId
+    const messages = []
+
+    return {
+      __id: id,
+      helpers: {},
+      world: {
+        use: async () => ({}),
+      },
+      mailbox: {
+        capture(message) {
+          messages.push(message)
+          return message
+        },
+        all() {
+          return [...messages]
+        },
+        latest() {
+          return messages.at(-1)
+        },
+        clear() {
+          messages.length = 0
+        },
+      },
+      request: {
+        transport: 'virtual',
+      },
+      visit: {
+        transport: 'virtual',
+      },
+      sockets: {},
+      auth: {
+        login: {},
+      },
+      async boot() {
+        activeBoots += 1
+        maxActiveBoots = Math.max(maxActiveBoots, activeBoots)
+        await delay(20)
+        return {
+          sails: {
+            config: {},
+          },
+        }
+      },
+      async lower() {
+        activeBoots -= 1
+      },
+    }
+  }
+
+  const baseTest = (title, options, handler) => {
+    registrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({
+    baseTest,
+    runtime: createIsolatedRuntime,
+  })
+
+  soundingTest('concurrent explicit option', { concurrent: true }, async ({ sails, mailbox }) => {
+    seenRuntimeIds.push(sails.sounding.__id)
+    mailbox.capture({ subject: `trial-${sails.sounding.__id}` })
+    assert.equal(mailbox.all().length, 1)
+  })
+
+  soundingTest.concurrent('concurrent helper alias', async ({ sails, mailbox }) => {
+    seenRuntimeIds.push(sails.sounding.__id)
+    mailbox.capture({ subject: `trial-${sails.sounding.__id}` })
+    assert.equal(mailbox.all().length, 1)
+  })
+
+  assert.deepEqual(
+    registrations.map((registration) => registration.options),
+    [
+      {
+        concurrency: true,
+      },
+      {
+        concurrency: true,
+      },
+    ]
+  )
+
+  await Promise.all(registrations.map((registration) => registration.handler({})))
+
+  assert.equal(maxActiveBoots, 2)
+  assert.deepEqual(seenRuntimeIds.sort(), [1, 2])
+})
+
+test('test() rejects concurrent trials backed by one shared runtime object', async () => {
+  const registrations = []
+  const runtime = {
+    helpers: {},
+    world: {
+      use: async () => ({}),
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+    },
+    visit: {
+      transport: 'virtual',
+    },
+    async boot() {
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {},
+  }
+
+  const baseTest = (title, options, handler) => {
+    registrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest('shared runtime cannot run concurrently', { concurrent: true }, async () => {})
+
+  await assert.rejects(
+    () => registrations[0].handler({}),
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_CONCURRENT_RUNTIME_SHARED')
+      assert.match(error.message, /isolated runtime state/)
+      return true
+    }
+  )
+})
+
+test('test() routes captured mail to the active concurrent runtime mailbox', async () => {
+  const registrations = []
+  const sends = []
+  const send = {
+    with(inputs) {
+      sends.push(inputs.subject)
+      return Promise.resolve({})
+    },
+  }
+  const sails = {
+    config: {
+      appPath: process.cwd(),
+      datastores: {
+        default: {
+          adapter: 'sails-sqlite',
+          url: '.tmp/test.db',
+        },
+      },
+      sounding: {
+        datastore: 'inherit',
+        mail: {
+          capture: true,
+        },
+      },
+    },
+    models: {},
+    helpers: {
+      mail: {
+        send,
+      },
+    },
+  }
+
+  const baseTest = (title, options, handler) => {
+    registrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({
+    baseTest,
+    runtime: () => createRuntime(sails),
+  })
+
+  soundingTest('captures first concurrent message', { concurrent: true }, async ({ sails, mailbox }) => {
+    await delay(10)
+    await sails.helpers.mail.send.with({
+      to: 'first@example.com',
+      subject: 'First concurrent message',
+    })
+
+    assert.equal(mailbox.latest().subject, 'First concurrent message')
+    assert.equal(mailbox.all().length, 1)
+  })
+
+  soundingTest('captures second concurrent message', { concurrent: true }, async ({ sails, mailbox }) => {
+    await sails.helpers.mail.send.with({
+      to: 'second@example.com',
+      subject: 'Second concurrent message',
+    })
+
+    assert.equal(mailbox.latest().subject, 'Second concurrent message')
+    assert.equal(mailbox.all().length, 1)
+  })
+
+  await Promise.all(registrations.map((registration) => registration.handler({})))
+
+  assert.deepEqual(sends, [])
+  assert.equal(sails.helpers.mail.send, send)
 })
 
 test('test() exposes socket helpers for socket-capable trials', async () => {
@@ -656,6 +878,19 @@ test('test() reports malformed trial arguments with stable codes', () => {
       assert.equal(error.value, 'socket')
       assert.deepEqual(error.allowed, ['virtual', 'http'])
       assert.match(error.suggestion, /Use `virtual`/)
+      return true
+    }
+  )
+
+  assert.throws(
+    () => {
+      soundingTest('bad concurrency option', { concurrent: 'yes' }, async () => {})
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_TEST_OPTIONS_INVALID')
+      assert.equal(error.path, 'options.concurrent')
+      assert.equal(error.value, 'yes')
+      assert.match(error.suggestion, /concurrent: true/)
       return true
     }
   )

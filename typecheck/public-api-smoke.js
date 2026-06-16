@@ -309,6 +309,8 @@ test(
 
 test('world string options are typed from JSDoc', { world: 'signed-in-user' }, async () => {})
 
+test.concurrent('concurrent trial options are typed from JSDoc', { concurrent: true }, async () => {})
+
 // @ts-expect-error Trial options only support virtual and http transports.
 test('invalid transport options are caught by public JSDoc', { transport: 'ftp' }, async () => {})
 
