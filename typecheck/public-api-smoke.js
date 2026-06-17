@@ -201,9 +201,6 @@ const appManager = createAppManager({
   },
 })
 appManager.resolveConfig().request.transport = 'virtual'
-appManager.runtime({ http: true }).then((activeRuntime) => {
-  activeRuntime.request.using('http')
-})
 appManager.runtime({ app: 'load', reload: true }).then((activeRuntime) => {
   activeRuntime.request.using('virtual')
 })
@@ -288,7 +285,7 @@ loadWorldFiles({
 }).then((loadedFiles) => loadedFiles.map((filePath) => filePath.toUpperCase()))
 
 const localTest = createTestApi({ runtime: () => runtime })
-localTest.endpoint('typed endpoint alias', async ({ get, expect }) => {
+localTest('typed trial', async ({ get, expect }) => {
   const response = await get('/health')
   expect(response).toHaveStatus(200)
 })

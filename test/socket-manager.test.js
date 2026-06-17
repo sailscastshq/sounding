@@ -43,7 +43,7 @@ test('createSocketManager exercises Sails socket requests and room broadcasts', 
     await manager.lower()
   })
 
-  const runtime = await manager.runtime({ http: true })
+  const runtime = await manager.runtime({ app: 'lift' })
   const booted = await runtime.boot({ mode: 'socket' })
 
   const member = await booted.sockets.connect()
