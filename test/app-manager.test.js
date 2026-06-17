@@ -123,7 +123,7 @@ test('createAppManager loads consumer apps by default and disables shipwright fo
   assert.equal(loadCalls[0].datastores, undefined)
   assert.equal(liftCalls.length, 0)
 
-  const liftedRuntime = await manager.runtime({ http: true })
+  const liftedRuntime = await manager.runtime({ app: 'lift' })
   assert.equal(liftedRuntime, runtime)
   assert.equal(liftCalls[0].environment, 'test')
 
@@ -220,10 +220,22 @@ test('createAppManager exposes explicit load, lift, reload, and lifecycle timing
   assert.equal(globalThis.sounding, undefined)
 })
 
-test('createAppManager reports unknown app lifecycle modes with a stable code', async () => {
+test('createAppManager reports unknown app lifecycle options and modes with stable codes', async () => {
   const manager = createAppManager({
     SailsConstructor: class FakeSails {},
   })
+
+  await assert.rejects(
+    async () => {
+      await manager.runtime({ http: true })
+    },
+    (error) => {
+      assert.equal(error.code, 'E_SOUNDING_APP_MANAGER_OPTION_UNKNOWN')
+      assert.equal(error.option, 'http')
+      assert.deepEqual(error.allowed, ['app', 'transport', 'reload'])
+      return true
+    }
+  )
 
   await assert.rejects(
     async () => {

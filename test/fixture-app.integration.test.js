@@ -123,7 +123,7 @@ test('createAppManager can lift the real fixture app for HTTP request trials', a
     await manager.lower()
   })
 
-  const runtime = await manager.runtime({ http: true })
+  const runtime = await manager.runtime({ app: 'lift' })
   const booted = await runtime.boot({ mode: 'http' })
 
   const health = await booted.request.using('http').get('/api/health')
