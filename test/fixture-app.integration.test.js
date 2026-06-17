@@ -1,5 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
+const fs = require('node:fs')
 const net = require('node:net')
 const path = require('node:path')
 
@@ -112,6 +113,7 @@ test('createAppManager exercises a real Sails fixture app through the Sounding r
 
 test('createAppManager can lift the real fixture app for HTTP request trials', async (t) => {
   const port = await getFreePort()
+  const uploadDir = path.join(fixtureAppPath, '.tmp', 'sounding-fixture-uploads')
   const manager = createAppManager({
     appPath: fixtureAppPath,
     liftOptions: {
@@ -121,6 +123,7 @@ test('createAppManager can lift the real fixture app for HTTP request trials', a
 
   t.after(async () => {
     await manager.lower()
+    fs.rmSync(uploadDir, { recursive: true, force: true })
   })
 
   const runtime = await manager.runtime({ app: 'lift' })
@@ -130,6 +133,28 @@ test('createAppManager can lift the real fixture app for HTTP request trials', a
   assert.equal(health.status, 200)
   assert.equal(health.data.ok, true)
   assert.equal(health.session, undefined)
+
+  const form = new FormData()
+  form.append('displayName', 'Ada Lovelace')
+  form.append(
+    'avatar',
+    new Blob(['hello upload'], { type: 'text/plain' }),
+    'avatar.txt'
+  )
+
+  const upload = await booted.request
+    .using('http')
+    .post('/api/uploads/avatar', form)
+  assert.equal(upload.status, 200)
+  assert.deepEqual(upload.data.body, {
+    displayName: 'Ada Lovelace',
+  })
+  assert.equal(upload.data.files.length, 1)
+  assert.equal(upload.data.files[0].field, 'avatar')
+  assert.equal(upload.data.files[0].filename, 'avatar.txt')
+  assert.equal(upload.data.files[0].size, 12)
+  assert.equal(upload.data.files[0].type, 'text/plain')
+  assert.equal(fs.readFileSync(upload.data.files[0].fd, 'utf8'), 'hello upload')
 
   await runtime.lower()
 })
