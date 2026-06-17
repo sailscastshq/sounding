@@ -1,3 +1,5 @@
+const path = require('node:path')
+
 async function resolveSessionUser(req) {
   if (req.session.userId) {
     const user = await req._sails.models.user.findOne({ id: req.session.userId })
@@ -70,6 +72,34 @@ module.exports.routes = {
       email: user.email,
       fullName: user.fullName,
     })
+  },
+
+  'POST /api/uploads/avatar': function uploadAvatar(req, res) {
+    req.file('avatar').upload(
+      {
+        dirname: path.join(
+          req._sails.config.appPath,
+          '.tmp',
+          'sounding-fixture-uploads'
+        ),
+      },
+      (error, files) => {
+        if (error) {
+          return res.serverError(error)
+        }
+
+        return res.json({
+          body: req.body,
+          files: files.map((file) => ({
+            fd: file.fd,
+            field: file.field,
+            filename: file.filename,
+            size: file.size,
+            type: file.type,
+          })),
+        })
+      }
+    )
   },
 
   'GET /api/socket-health': function socketHealth(req, res) {

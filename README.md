@@ -27,6 +27,7 @@ The canonical Sails-native surface is:
 - Inertia-style visits can use `visit('/pricing')` and partial reload options like `{ component, only }`
 - mail assertions can check captured emails with `expect(mailbox).toHaveSentMail({ to, subject })` and `expect(mailbox.latest()).toHaveCtaUrl(/magic-link/)`
 - a trial can opt into stricter parity with `test('...', { transport: 'http' }, ...)`
+- upload trials use `FormData` over the HTTP transport so Sails can exercise real Skipper streams
 - independent trials can opt into concurrent execution with `test('...', { concurrent: true }, ...)` or `test.concurrent(...)`
 - any trial can also scope a request client with `sails.sounding.request.using('http')`
 
@@ -96,6 +97,44 @@ module.exports.sounding = {
 ```
 
 If you intentionally want Sounding during another boot path, widen the list explicitly, for example `['test', 'console']` or `['test', 'production']`.
+
+## Upload trials
+
+Use HTTP request trials for Sails file uploads. Uploads in Sails are streaming
+Skipper requests, so they need the HTTP stack that Sails uses for real multipart
+forms.
+
+```js
+const { test } = require('sounding')
+
+test(
+  'creator can upload a receipt',
+  { transport: 'http' },
+  async ({ request, expect }) => {
+    const form = new FormData()
+
+    form.append('description', 'Home office monitor')
+    form.append('amount', '1200')
+    form.append(
+      'receipt',
+      new Blob(['receipt bytes'], { type: 'application/pdf' }),
+      'receipt.pdf'
+    )
+
+    const response = await request.post('/expenses', form)
+
+    expect(response).toRedirectTo('/expenses/new')
+  }
+)
+```
+
+When a multipart form mixes text fields and files, append the text fields before
+the files. That matches Sails and Skipper's streaming model, where actions can
+start while file streams are still arriving.
+
+Do not use the virtual transport for upload behavior. Virtual requests are still
+right for normal endpoints, JSON APIs, session assertions, redirects, and
+Inertia contracts, but real `req.file()` uploads are HTTP-only in Sails.
 
 ## Project init
 
