@@ -182,6 +182,8 @@ The command discovers `.test.js` files under `tests/` and `test/`, then runs Nod
 npx sounding test --grep "dashboard"
 npx sounding test --file tests/sounding/examples.test.js
 npx sounding test --lane browser
+npx sounding test --shard=1/4
+npx sounding test --parallel
 npx sounding test --watch
 ```
 
@@ -194,7 +196,30 @@ npx sounding test --json
 npx sounding test --coverage
 ```
 
-When no reporter is specified, `sounding test` uses Sounding's readable reporter. Failed response assertions group the request, response, body, file location, and code frame so the behavior is visible without digging through a raw stack trace. Use `--verbose` when you want full stacks and expanded Sounding diagnostics:
+When no reporter is specified, `sounding test` uses Sounding's readable reporter. Failed response assertions group the request, response, body, file location, and code frame so the behavior is visible without digging through a raw stack trace. Use `--compact` for failure-focused output, `--profile` to print the slowest trials before the final summary, and `--slow=N` to control how many profiled trials are shown:
+
+```sh
+npx sounding test --compact
+npx sounding test --profile --slow=10
+```
+
+For larger suites in CI, split the same discovered file list across matrix jobs with `--shard=part/total`. Sharding composes with lanes and explicit files:
+
+```sh
+npx sounding test --lane browser --shard=1/4
+npx sounding test --file tests/sounding/examples.test.js --shard=2/4
+```
+
+```yaml
+strategy:
+  matrix:
+    shard: [1, 2, 3, 4]
+
+steps:
+  - run: npx sounding test --shard=${{ matrix.shard }}/4 --profile --slow=10
+```
+
+Use `--verbose` when you want full stacks and expanded Sounding diagnostics:
 
 ```sh
 npx sounding test --verbose

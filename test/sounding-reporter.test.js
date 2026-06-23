@@ -133,6 +133,64 @@ test('formatPassedGroups accepts raw Node pass events', () => {
   assert.match(rendered, /✓ JSON paths read like product facts\s+2ms/)
 })
 
+test('formatProfileTrials renders the slowest trials in duration order', () => {
+  const rendered = reporter.formatProfileTrials(
+    [
+      reporter.parseTrial(
+        {
+          name: 'fast endpoint response',
+          file: path.join(process.cwd(), 'tests', 'api.test.js'),
+          details: {
+            duration_ms: 4,
+          },
+        },
+        'passed'
+      ),
+      reporter.parseTrial(
+        {
+          name: 'browser checkout flow',
+          file: path.join(process.cwd(), 'tests', 'browser', 'checkout.test.js'),
+          details: {
+            duration_ms: 42,
+          },
+        },
+        'passed'
+      ),
+      reporter.parseTrial(
+        {
+          name: 'failing billing request',
+          file: path.join(process.cwd(), 'tests', 'billing.test.js'),
+          details: {
+            duration_ms: 18,
+          },
+        },
+        'failed',
+        {
+          sourceLoader() {
+            return ''
+          },
+        }
+      ),
+    ],
+    {
+      red: (value) => value,
+      green: (value) => value,
+      bold: (value) => value,
+      dim: (value) => value,
+      cyan: (value) => value,
+    },
+    {
+      limit: 2,
+    }
+  )
+
+  assert.match(rendered, /PROFILE\s+Slowest trials/)
+  assert.match(rendered, /1\. 42ms\s+passed\s+tests\/browser\/checkout\.test\.js/)
+  assert.match(rendered, /browser checkout flow/)
+  assert.match(rendered, /2\. 18ms\s+failed\s+tests\/billing\.test\.js/)
+  assert.doesNotMatch(rendered, /fast endpoint response/)
+})
+
 test('renderFailure can include raw wrapper error details and cause chains', () => {
   const cause = new Error('expected 2 to equal 3')
   const wrapper = new Error('test failed')
