@@ -316,6 +316,63 @@ test('world string options are typed from JSDoc', { world: 'signed-in-user' }, a
 
 test.concurrent('concurrent trial options are typed from JSDoc', { concurrent: true }, async () => {})
 
+test('browser page wrapper context is typed from JSDoc', { browser: 'mobile' }, async ({ visit, page, expect }) => {
+  const visitedPage = await visit('/dashboard').inDarkMode()
+
+  await visitedPage
+    .click('@send-link')
+    .type('email', 'owner@example.com')
+    .typeSlowly('@search', 'billing')
+    .append('@email', '.test')
+    .clear('@search')
+    .attach('@avatar', 'avatar.png')
+    .drag('@card', '@dropzone')
+    .press('Send link')
+    .resize(390, 844)
+    .key('Enter')
+    .keys(['Meta+K', 'Escape'])
+    .withinFrame('@checkout-frame', async (frame) => {
+      await frame.click('Save')
+    })
+
+  await visit('/settings')
+    .on('safari')
+    .withHost('app.test')
+    .inLightMode()
+    .withLocale('en-GB')
+    .withTimezone('Africa/Lagos')
+    .withUserAgent('SoundingBot/1.0')
+    .withGeolocation(6.5244, 3.3792)
+    .click('@profile')
+
+  await visit('/nearby').withGeolocation({
+    latitude: 6.5244,
+    longitude: 3.3792,
+    accuracy: 20,
+  })
+
+  await visit('/mobile-dashboard').onMobile()
+
+  await expect(visitedPage).toSee('Dashboard')
+  await expect(visitedPage).not.toSee('Forbidden')
+  expect(visitedPage).toHavePath('/dashboard')
+  await expect(visitedPage).toHaveTitle(/Dashboard/)
+  expect(visitedPage).toHaveNoJavascriptErrors()
+  expect(visitedPage).toHaveNoConsoleLogs()
+  expect(visitedPage).toHaveNoConsoleErrors()
+  expect(visitedPage).toHaveNoSmoke()
+
+  visitedPage.url()
+  await visitedPage.text('@status')
+  await visitedPage.html()
+  await visitedPage.content()
+  await visitedPage.script(() => 'ok')
+  await visitedPage.screenshot('dashboard.png', { fullPage: true })
+  await visitedPage.screenshotElement('@receipt', 'receipt.png')
+
+  page?.raw
+})
+
 // @ts-expect-error Trial options only support virtual and http transports.
 test('invalid transport options are caught by public JSDoc', { transport: 'ftp' }, async () => {})
 
