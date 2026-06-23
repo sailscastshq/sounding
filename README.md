@@ -20,6 +20,7 @@ The canonical Sails-native surface is:
 - `request.as('owner')` and `visit.as('owner')` can resolve actor aliases from the current world
 - `test('...', { browser: 'mobile' }, async ({ page }) => {})` can select a named browser project without extra ceremony
 - failed browser trials capture the current URL and a full-page screenshot under `.tmp/sounding/artifacts`
+- opt-in visual snapshots can compare browser pages with `expect(page).toMatchScreenshot('pricing')`
 - request helpers default to Sails virtual requests powered by `sails.request()`
 - virtual request responses expose the final `req.session` snapshot as `response.session`; HTTP responses leave it undefined
 - request assertions can check auth/session state with `expect(response).toHaveSession('userId', user.id)` and flash messages with `expect(response).toHaveFlash('info', /welcome/i)`
@@ -230,6 +231,12 @@ Use `--raw-error` or `SOUNDING_RAW=1` when the formatted view hides something im
 
 ```sh
 npx sounding test --raw-error
+```
+
+Use `--update-snapshots` to create or update visual screenshot baselines:
+
+```sh
+npx sounding test --update-snapshots
 ```
 
 Use `--dry-run` to inspect the exact `node --test` command before running it.
@@ -505,6 +512,34 @@ Supported browser expectations:
 | `expect(page).toHaveNoConsoleLogs()` | Fail on any console message, including `log`, `warn`, `info`, and `error`. |
 | `expect(page).toHaveNoConsoleErrors()` | Fail only on `console.error`. |
 | `expect(page).toHaveNoSmoke()` | Fail on JavaScript errors or console errors. |
+| `expect(page).toMatchScreenshot(name)` | Compare a full-page screenshot against an approved visual baseline. |
+
+### Visual regression snapshots
+
+Use visual snapshots only when the rendered page shape matters more than a DOM
+contract:
+
+```js
+test('pricing page matches approved desktop screenshot', { browser: 'desktop' }, async ({ visit, expect }) => {
+  const page = await visit('/pricing')
+
+  await expect(page).toMatchScreenshot('pricing')
+})
+```
+
+Baselines live under `tests/screenshots/<browser-project>/<name>.png`, so
+desktop and mobile screenshots do not collide. Create or update baselines with:
+
+```sh
+SOUNDING_UPDATE_SNAPSHOTS=1 npx sounding test
+# or
+npx sounding test --update-snapshots
+```
+
+When a baseline is missing, Sounding tells you how to create it. When a
+screenshot differs, Sounding writes `actual.png`, `expected.png`, and
+`diff.html` under `.tmp/sounding/artifacts/visual/<browser-project>/<name>/`
+and includes those paths in the failure output.
 
 ### Browser smoke helpers
 
