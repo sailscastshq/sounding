@@ -371,6 +371,8 @@ test('browser page wrapper context is typed from JSDoc', { browser: 'mobile' }, 
   expect(visitedPage).toHaveNoConsoleLogs()
   expect(visitedPage).toHaveNoConsoleErrors()
   expect(visitedPage).toHaveNoSmoke()
+  await expect(visitedPage).toMatchScreenshot('dashboard-mobile')
+  await expect(visitedPage).toMatchScreenshot('dashboard-mobile-dark', { fullPage: true })
 
   visitedPage.url()
   await visitedPage.text('@status')

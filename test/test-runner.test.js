@@ -127,12 +127,12 @@ test('buildTestCommand uses the Sounding reporter by default', () => {
   ])
 })
 
-test('buildTestCommand maps Sounding reporter mode flags to environment', () => {
+test('buildTestCommand maps Sounding runner mode flags to environment', () => {
   const appPath = createTempApp()
   const command = buildTestCommand({
     appPath,
     nodeExecutable: 'node',
-    argv: ['--compact', '--verbose', '--raw-error', 'tests/account.test.js'],
+    argv: ['--compact', '--verbose', '--raw-error', '--update-snapshots', 'tests/account.test.js'],
   })
 
   assert.deepEqual(command.env, {
@@ -140,6 +140,7 @@ test('buildTestCommand maps Sounding reporter mode flags to environment', () => 
     SOUNDING_REPORTER_VERBOSE: '1',
     SOUNDING_DIAGNOSTICS: 'verbose',
     SOUNDING_RAW: '1',
+    SOUNDING_UPDATE_SNAPSHOTS: '1',
   })
   assert.deepEqual(command.args, [
     '--test',

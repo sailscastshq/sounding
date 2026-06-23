@@ -43,6 +43,7 @@ Options:
   --slow <count>                 Control how many profiled trials are shown. Implies --profile.
   --verbose                      Show full stacks and verbose Sounding diagnostics.
   --raw-error                    Show raw Node/Sounding error details after formatted failures.
+  --update-snapshots             Create or overwrite visual screenshot baselines.
   --junit [path]                 Use the junit reporter.
   --json                         Use the json reporter.
   --coverage                     Enable Node test coverage.
