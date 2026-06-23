@@ -5,6 +5,7 @@ const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 
+const packageJson = require('../package.json')
 const { TEST_COMMAND, initProject } = require('../lib/init-project')
 
 function createTempApp(prefix = 'sounding-init-') {
@@ -33,7 +34,7 @@ test('initProject scaffolds package scripts, dependencies, worlds, and examples'
   assert.equal(result.auth.identity, 'user')
   assert.equal(result.auth.detected, true)
   assert.equal(pkg.scripts.test, TEST_COMMAND)
-  assert.match(pkg.devDependencies.sounding, /^\^0\.0\./)
+  assert.equal(pkg.devDependencies.sounding, `^${packageJson.version}`)
   assert.equal(pkg.devDependencies['sails-sqlite'], '^0.2.6')
   assert.equal(fs.existsSync(path.join(appPath, 'tests', 'factories')), true)
   assert.equal(fs.existsSync(path.join(appPath, 'tests', 'scenarios')), true)

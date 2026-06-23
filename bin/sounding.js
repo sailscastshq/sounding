@@ -34,8 +34,11 @@ Options:
   --lane <name>                  Run tests under tests/<name> or test/<name>.
   --changed                      Run changed .test.js files when git metadata is available.
   --watch                        Forward to Node watch mode.
-  --reporter <name>              Forward to --test-reporter.
+  --reporter <name>              Use a Node reporter, or "sounding" for Sounding output.
   --reporter-destination <path>  Forward to --test-reporter-destination.
+  --compact                      Keep Sounding reporter output failure-focused.
+  --verbose                      Show full stacks and verbose Sounding diagnostics.
+  --raw-error                    Show raw Node/Sounding error details after formatted failures.
   --junit [path]                 Use the junit reporter.
   --json                         Use the json reporter.
   --coverage                     Enable Node test coverage.
