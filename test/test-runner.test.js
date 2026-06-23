@@ -231,8 +231,8 @@ test('bin/sounding.js shows a readable PASS block for small successful runs', ()
   assert.match(stdout, /✓ account/)
   assert.match(stdout, /PASS\s+Tests:\s+1 passed, 1 total/)
   assert.doesNotMatch(stdout, /Tests:\s{2,}\d/)
-  assert.match(stdout, /\n\nDuration: \d+ms/)
-  assert.doesNotMatch(stdout, /\n[^\S\r\n]+Duration:/)
+  assert.match(stdout, /\n\n {6}Duration: \d+ms/)
+  assert.doesNotMatch(stdout, /\n\n {0,5}Duration:/)
 })
 
 test('bin/sounding.js uses the Sounding reporter for failures by default', () => {
