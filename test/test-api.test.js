@@ -70,6 +70,79 @@ test('test() boots the runtime and passes a Sails-native helper context', async 
   ])
 })
 
+test('test.it() mirrors the Sounding trial family', async () => {
+  const calls = []
+  const baseRegistrations = []
+  const onlyRegistrations = []
+  const skipped = []
+  const todos = []
+  const runtime = {
+    helpers: {},
+    world: {
+      use: async () => ({}),
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      get: async () => ({ status: 200 }),
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+
+  const baseTest = (title, options, handler) => {
+    baseRegistrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.only = (title, options, handler) => {
+    onlyRegistrations.push({ title, options, handler })
+    return { title, only: true }
+  }
+  baseTest.skip = (...args) => skipped.push(args)
+  baseTest.todo = (...args) => todos.push(args)
+
+  const soundingTest = createTestApi({
+    baseTest,
+    runtime,
+  })
+
+  soundingTest.it('health endpoint is available', async ({ expect }) => {
+    expect(true).toBe(true)
+  })
+  soundingTest.it.only('focused health endpoint is available', async ({ expect }) => {
+    expect(true).toBe(true)
+  })
+  soundingTest.it.concurrent('isolated health endpoint is available', async () => {})
+  soundingTest.it.skip('skipped behavior')
+  soundingTest.it.todo('future behavior')
+
+  assert.equal(baseRegistrations.length, 2)
+  assert.equal(onlyRegistrations.length, 1)
+  assert.deepEqual(skipped, [['skipped behavior']])
+  assert.deepEqual(todos, [['future behavior']])
+  assert.equal(typeof soundingTest.it.concurrent, 'function')
+
+  await baseRegistrations[0].handler({})
+  await onlyRegistrations[0].handler({})
+
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['lower'],
+    ['boot', 'trial'],
+    ['lower'],
+  ])
+})
+
 test('test() exposes request verb aliases for endpoint-style trials', async () => {
   const calls = []
   const baseRegistrations = []

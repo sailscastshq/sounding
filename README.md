@@ -16,6 +16,7 @@ The canonical Sails-native surface is:
 - `get('/api/issues')` or `sails.sounding.request.get('/api/issues')` inside endpoint-style trials
 - `await auth.login.withPassword('creator@example.com', page, { password: 'secret123' })` inside browser trials
 - `await auth.request.withPassword('creator@example.com', { password: 'secret123' })` inside request trials
+- `test.it('...', async ({ expect }) => {})` when you want the behavior-reading alias
 - `test('...', { world: 'signed-in-user' }, async ({ request }) => {})` can auto-load named worlds before the handler runs
 - `request.as('owner')` and `visit.as('owner')` can resolve actor aliases from the current world
 - `test('...', { browser: 'mobile' }, async ({ page }) => {})` can select a named browser project without extra ceremony
@@ -461,6 +462,12 @@ Sounding runs trials serially by default. That keeps shared Sails app state bori
 Independent trials can opt into Node test concurrency:
 
 ```js
+test.it('health check is readable', async ({ get, expect }) => {
+  const response = await get('/health')
+
+  expect(response).toHaveStatus(200)
+})
+
 test.concurrent('health check is isolated', async ({ get, expect }) => {
   const response = await get('/health')
 
