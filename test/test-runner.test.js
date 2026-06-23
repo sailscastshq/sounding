@@ -295,10 +295,9 @@ test('bin/sounding.js shows a readable PASS block for small successful runs', ()
   assert.equal(result.status, 0, result.stderr.toString())
   assert.match(stdout, /PASS\s+tests\/account\.test\.js/)
   assert.match(stdout, /✓ account/)
-  assert.match(stdout, /PASS\s+Tests:\s+1 passed, 1 total/)
+  assert.match(stdout, /PASS\s+Tests:\s+1 passed, 1 total\s+Duration:\s+\d+ms/)
   assert.doesNotMatch(stdout, /Tests:\s{2,}\d/)
-  assert.match(stdout, /\n\n {6}Duration: \d+ms/)
-  assert.doesNotMatch(stdout, /\n\n {0,5}Duration:/)
+  assert.doesNotMatch(stdout, /1 total\n+\s*Duration:/)
 })
 
 test('bin/sounding.js can print the slowest trial profile', () => {
@@ -319,7 +318,7 @@ test('bin/sounding.js can print the slowest trial profile', () => {
   assert.match(stdout, /PROFILE\s+Slowest trials/)
   assert.match(stdout, /\bpassed\s+tests\/account\.test\.js/)
   assert.match(stdout, /account/)
-  assert.match(stdout, /PASS\s+Tests:\s+1 passed, 1 total/)
+  assert.match(stdout, /PASS\s+Tests:\s+1 passed, 1 total\s+Duration:\s+\d+ms/)
 })
 
 test('bin/sounding.js uses the Sounding reporter for failures by default', () => {
