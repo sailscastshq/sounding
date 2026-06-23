@@ -4,7 +4,7 @@ const path = require('node:path')
 
 const reporter = require('../lib/sounding-reporter')
 
-test('parseFailure builds a structured SoundingFailure before terminal rendering', () => {
+test('parseTrial builds a SoundingTrial with a structured failure payload', () => {
   const cause = new Error(
     [
       'Expected response status 200, received 500.',
@@ -38,7 +38,7 @@ test('parseFailure builds a structured SoundingFailure before terminal rendering
   wrapper.cause = cause
   wrapper.stack = ''
 
-  const failure = reporter.parseFailure(
+  const trial = reporter.parseTrial(
     {
       name: 'creator sees billing summary',
       file: path.join(process.cwd(), 'tests', 'billing.test.js'),
@@ -48,6 +48,7 @@ test('parseFailure builds a structured SoundingFailure before terminal rendering
         error: wrapper,
       },
     },
+    'failed',
     {
       sourceLoader() {
         return [
@@ -61,20 +62,75 @@ test('parseFailure builds a structured SoundingFailure before terminal rendering
     }
   )
 
-  assert.equal(failure.type, 'SoundingFailure')
-  assert.equal(failure.message, 'Expected response status 200, received 500.')
-  assert.deepEqual(failure.metadataGroups.map((group) => group.title), [
+  assert.equal(trial.type, 'SoundingTrial')
+  assert.equal(trial.status, 'failed')
+  assert.equal(trial.failure.type, 'SoundingFailure')
+  assert.equal(trial.failure.message, 'Expected response status 200, received 500.')
+  assert.deepEqual(trial.metadataGroups.map((group) => group.title), [
     'World',
     'Request',
     'Response',
     'Body',
     'Browser',
   ])
-  assert.equal(failure.causeChain.length, 2)
+  assert.equal(trial.failure.causeChain.length, 2)
   assert.equal(
-    failure.codeFrame.lines.find((line) => line.highlighted).source,
+    trial.failure.codeFrame.lines.find((line) => line.highlighted).source,
     '  expect(response).toHaveStatus(200)'
   )
+})
+
+test('parseTrial keeps passed trials lightweight', () => {
+  const trial = reporter.parseTrial(
+    {
+      name: 'JSON paths read like product facts',
+      file: path.join(process.cwd(), 'tests', 'arch.test.js'),
+      details: {
+        duration_ms: 1.4,
+      },
+    },
+    'passed'
+  )
+
+  assert.deepEqual(trial, {
+    type: 'SoundingTrial',
+    status: 'passed',
+    name: 'JSON paths read like product facts',
+    file: path.join(process.cwd(), 'tests', 'arch.test.js'),
+    line: undefined,
+    column: undefined,
+    durationMs: 1.4,
+    event: {
+      name: 'JSON paths read like product facts',
+      file: path.join(process.cwd(), 'tests', 'arch.test.js'),
+      details: {
+        duration_ms: 1.4,
+      },
+    },
+    metadataGroups: [],
+  })
+})
+
+test('formatPassedGroups accepts raw Node pass events', () => {
+  const rendered = reporter.formatPassedGroups(
+    [
+      {
+        name: 'JSON paths read like product facts',
+        file: path.join(process.cwd(), 'tests', 'arch.test.js'),
+        details: {
+          duration_ms: 2,
+        },
+      },
+    ],
+    {
+      green: (value) => value,
+      bold: (value) => value,
+      dim: (value) => value,
+    }
+  )
+
+  assert.match(rendered, /PASS\s+tests\/arch\.test\.js/)
+  assert.match(rendered, /✓ JSON paths read like product facts\s+2ms/)
 })
 
 test('renderFailure can include raw wrapper error details and cause chains', () => {
