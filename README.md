@@ -194,7 +194,31 @@ npx sounding test --json
 npx sounding test --coverage
 ```
 
+When no reporter is specified, `sounding test` uses Sounding's readable reporter. Failed response assertions group the request, response, body, file location, and code frame so the behavior is visible without digging through a raw stack trace. Use `--verbose` when you want full stacks and expanded Sounding diagnostics:
+
+```sh
+npx sounding test --verbose
+```
+
+Use `--raw-error` or `SOUNDING_RAW=1` when the formatted view hides something important. Raw mode keeps the pretty failure first, then prints the original Node test error, its `cause`, Sounding metadata, and the primary frame payload:
+
+```sh
+npx sounding test --raw-error
+```
+
 Use `--dry-run` to inspect the exact `node --test` command before running it.
+
+The repository includes an intentionally failing reporter fixture that is useful for before/after screenshots:
+
+```sh
+node ./bin/sounding.js test --app examples/pretty-output-demo
+```
+
+There is also a small passing fixture for successful-output screenshots:
+
+```sh
+node ./bin/sounding.js test --app examples/pretty-output-success
+```
 
 ## App lifecycle
 
