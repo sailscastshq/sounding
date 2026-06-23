@@ -260,10 +260,23 @@ discovers plugin packages installed in your app when their package names match
 `sounding-plugin-*` or `@sounding/plugin-*`, so official plugins work as soon as
 they are added as dev dependencies.
 
-For example, stress testing lives in `sounding-plugin-stress`:
+The setup is intentionally install-only:
 
 ```sh
 npm install -D sounding-plugin-stress
+```
+
+There is no `plugins` array and no `config/sounding.js` registration step. The
+dev dependency is the registration: Sounding reads your app's `package.json`,
+loads matching plugin packages, and lets each plugin register:
+
+- CLI commands, such as `sounding stress`
+- focused test methods, such as `test.stress(...)`
+- trial context helpers, such as `{ stress }`
+
+For example, stress testing lives in `sounding-plugin-stress`:
+
+```sh
 sounding stress /api/health --duration=10 --concurrency=25
 ```
 
@@ -271,6 +284,11 @@ Plugin commands, trial helpers, and focused test methods are registered through
 the plugin package. Core also provides a small event bus for lifecycle and
 streaming use cases such as `stress:start` and `stress:done`, while keeping
 capability registration explicit and predictable.
+
+Event emitters are the right tool for observability and lifecycle side effects,
+not for discovering the public API. A plugin should register commands, test
+methods, and trial helpers explicitly, then use events for things other tools may
+want to watch.
 
 If `sounding stress` is run before the plugin is installed, Sounding prints the
 plugin install command instead of making stress testing a required dependency for
@@ -280,6 +298,20 @@ every project.
 
 Install `sounding-plugin-stress` to run real HTTP load checks from the CLI or
 inside Sounding trials.
+
+```sh
+npm install -D sounding-plugin-stress
+```
+
+Sounding uses `autocannon` as the first stress engine. It is owned by the stress
+plugin, not by Sounding core, so apps that never run load checks do not install a
+load-testing engine. `autocannon` is a Node-native HTTP benchmarking tool, which
+fits Sounding's runtime and maps cleanly to Sails HTTP routes.
+
+The public API is still Sounding's API. The plugin translates fluent Sounding
+calls into engine options, then normalizes engine output into assertion-friendly
+metrics. That gives us room to add another engine later without changing trial
+code.
 
 External targets run directly:
 
@@ -294,6 +326,12 @@ HTTP route:
 sounding stress /api/health --duration=10 --concurrency=25
 ```
 
+Relative paths can also target a deployed host without lifting a local app:
+
+```sh
+sounding stress /api/health --base-url=https://staging.example.com
+```
+
 Worlds and actor aliases work for local Sails app stress runs:
 
 ```sh
@@ -302,6 +340,33 @@ sounding stress /api/billing/summary \
   --as=owner \
   --duration=10 \
   --concurrency=20
+```
+
+Remote and `--base-url` targets should use normal HTTP auth, such as headers or
+tokens:
+
+```sh
+sounding stress https://staging.example.com/api/me \
+  --header "Authorization: Bearer $TOKEN"
+```
+
+Useful CLI options:
+
+```sh
+sounding stress <target> \
+  --duration=10 \
+  --concurrency=25 \
+  --method=POST \
+  --header "x-test-lane: stress" \
+  --json '{"plan":"pro"}'
+```
+
+Method shorthands are available too:
+
+```sh
+sounding stress /api/invoices --post='{"plan":"pro"}'
+sounding stress /api/health --get
+sounding stress /api/session --delete
 ```
 
 Inside a trial, use `test.stress()` when the behavior needs real HTTP load:
@@ -326,9 +391,37 @@ test.stress(
 )
 ```
 
+You can also use the `stress` helper in any HTTP-capable trial:
+
+```js
+test(
+  'health endpoint has no failed requests',
+  { transport: 'http' },
+  async ({ stress, expect }) => {
+    const result = await stress.get('/api/health').concurrently(25).for(10).seconds()
+
+    expect(result.requests.failed().count()).toBe(0)
+  }
+)
+```
+
+The fluent request API covers the common HTTP shapes:
+
+```js
+await stress.get('/api/health')
+await stress.head('/api/health')
+await stress.options('/api/health')
+await stress.post('/api/invoices').json({ plan: 'pro' })
+await stress.put('/api/invoices/1').body('raw body')
+await stress.patch('/api/invoices/1', { memo: 'updated' })
+await stress.delete('/api/session')
+await stress.request('POST', '/api/events').headers({ authorization: 'Bearer token' })
+```
+
 The result exposes stable metrics like `requests.count()`,
 `requests.rate()`, `requests.failed().count()`, `requests.duration().p95()`,
-and `testRun.concurrency()`.
+and `testRun.concurrency()`. It also keeps the raw engine result at `result.raw`
+when you need to inspect autocannon-specific fields.
 
 ## App lifecycle
 
