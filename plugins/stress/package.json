@@ -5,7 +5,7 @@
   "main": "index.js",
   "license": "MIT",
   "peerDependencies": {
-    "sounding": "^0.1.0"
+    "sounding": "^0.2.0"
   },
   "dependencies": {
     "autocannon": "^8.0.0"
