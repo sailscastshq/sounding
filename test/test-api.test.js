@@ -701,7 +701,8 @@ test('test.only() runs focused trials through the Sounding wrapper', async () =>
       assert.equal(sails.sounding, runtime)
       assert.equal(request.transport, 'http')
       assert.equal(visit.transport, 'http')
-      assert.deepEqual(page, { name: 'page' })
+      assert.equal(page.name, 'page')
+      assert.equal(page.raw.name, 'page')
     }
   )
 
@@ -719,6 +720,255 @@ test('test.only() runs focused trials through the Sounding wrapper', async () =>
     ['using', 'http'],
     ['visit:using', 'http'],
     ['browser:open', { project: 'desktop', trialName: 'focused http browser trial' }],
+    ['lower'],
+  ])
+})
+
+test('test() exposes an expect-first browser page wrapper and browser visit helper', async () => {
+  const calls = []
+  const registrations = []
+  let currentUrl = 'http://127.0.0.1:3333/'
+  const fakePage = {
+    on() {},
+    name: 'raw-page',
+    url: () => currentUrl,
+    title: async () => 'Dashboard',
+    async goto(target) {
+      currentUrl = String(target).startsWith('http')
+        ? target
+        : `http://127.0.0.1:3333${target}`
+      calls.push(['goto', target])
+    },
+    async emulateMedia(options) {
+      calls.push(['emulateMedia', options])
+    },
+    context() {
+      return {
+        async grantPermissions(permissions) {
+          calls.push(['grantPermissions', permissions])
+        },
+        async setGeolocation(geolocation) {
+          calls.push(['setGeolocation', geolocation])
+        },
+      }
+    },
+    getByText(text) {
+      return {
+        first() {
+          return this
+        },
+        async click() {
+          calls.push(['text:click', text])
+        },
+      }
+    },
+    getByLabel(label) {
+      return {
+        first() {
+          return this
+        },
+        async fill(value) {
+          calls.push(['label:fill', label, value])
+        },
+      }
+    },
+    locator(selector) {
+      return {
+        async textContent() {
+          assert.equal(selector, 'body')
+          return 'Dashboard Check your email'
+        },
+      }
+    },
+  }
+  const runtime = {
+    helpers: {},
+    world: {
+      reset() {},
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+    },
+    visit: {
+      transport: 'virtual',
+    },
+    sockets: {},
+    auth: {
+      login: {
+        async as(actor, page) {
+          calls.push(['login:as', actor, page.raw])
+        },
+      },
+    },
+    browser: {
+      async open(options) {
+        calls.push(['browser:open', options])
+        return {
+          browser: { name: 'browser' },
+          context: { name: 'context' },
+          page: fakePage,
+          project: 'mobile',
+          latestArtifacts: null,
+        }
+      },
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+  const baseTest = (title, options, handler) => {
+    registrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest('owner can open the dashboard', { browser: 'mobile' }, async ({ visit, page, expect }) => {
+    const visitedPage = await visit
+      .as('owner')('/dashboard')
+      .withHost('app.test')
+      .inDarkMode()
+      .withGeolocation({ latitude: 6.5244, longitude: 3.3792 })
+
+    assert.equal(visitedPage, page)
+    assert.equal(page.raw, fakePage)
+    assert.equal(visit.transport, 'virtual')
+
+    await page.click('Email me a link').type('email', 'owner@example.com').press('Send link')
+    await expect(page).toSee('Dashboard')
+    await expect(page).not.toSee('Forbidden')
+    expect(page).toHavePath('/dashboard')
+    await expect(page).toHaveTitle('Dashboard')
+    expect(page).toHaveNoSmoke()
+  })
+
+  await registrations[0].handler({})
+
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['browser:open', { project: 'mobile', trialName: 'owner can open the dashboard' }],
+    ['login:as', 'owner', fakePage],
+    ['emulateMedia', { colorScheme: 'dark' }],
+    ['grantPermissions', ['geolocation']],
+    ['setGeolocation', { latitude: 6.5244, longitude: 3.3792 }],
+    ['goto', 'http://app.test/dashboard'],
+    ['text:click', 'Email me a link'],
+    ['label:fill', 'email', 'owner@example.com'],
+    ['text:click', 'Send link'],
+    ['lower'],
+  ])
+})
+
+test('test() lets visit select a browser project before navigation', async () => {
+  const calls = []
+  const registrations = []
+  const createFakePage = (name) => ({
+    on() {},
+    name,
+    url: () => `http://127.0.0.1:3333/${name}`,
+    async goto(target) {
+      calls.push(['goto', name, target])
+    },
+    async emulateMedia(options) {
+      calls.push(['emulateMedia', name, options])
+    },
+  })
+  const runtime = {
+    helpers: {},
+    world: {
+      reset() {},
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+    },
+    visit: {
+      transport: 'virtual',
+    },
+    sockets: {},
+    auth: {
+      login: {
+        async as(actor, page) {
+          calls.push(['login:as', actor, page.raw.name])
+        },
+      },
+    },
+    browser: {
+      async open(options) {
+        const project = options.project || 'desktop'
+        calls.push(['browser:open', options])
+        return {
+          browser: { name: `${project}-browser` },
+          context: { name: `${project}-context` },
+          page: createFakePage(`${project}-page`),
+          project,
+          latestArtifacts: null,
+        }
+      },
+      async close() {
+        calls.push(['browser:close'])
+      },
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+  const baseTest = (title, options, handler) => {
+    registrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest('owner can open the mobile dashboard', { browser: true }, async ({ visit, page }) => {
+    const visitedPage = await visit
+      .as('owner')('/dashboard')
+      .onMobile()
+      .inDarkMode()
+
+    assert.equal(visitedPage, page)
+    assert.equal(page.raw.name, 'mobile-page')
+    assert.equal(page.playwrightPage.name, 'mobile-page')
+  })
+
+  await registrations[0].handler({})
+
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['browser:open', { trialName: 'owner can open the mobile dashboard' }],
+    ['browser:close'],
+    [
+      'browser:open',
+      { trialName: 'owner can open the mobile dashboard', project: 'mobile' },
+    ],
+    ['login:as', 'owner', 'mobile-page'],
+    ['emulateMedia', 'mobile-page', { colorScheme: 'dark' }],
+    ['goto', 'mobile-page', '/dashboard'],
     ['lower'],
   ])
 })

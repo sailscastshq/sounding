@@ -7,6 +7,7 @@ const path = require('node:path')
 const { createBrowserManager } = require('../lib/create-browser-manager')
 const { createAuthHelpers } = require('../lib/create-auth-helpers')
 const { createExpect } = require('../lib/create-expect')
+const { createSoundingBrowserPage } = require('../lib/create-browser-page')
 
 test('createBrowserManager opens a browser session with the configured base URL', async () => {
   const calls = []
@@ -67,12 +68,337 @@ test('createBrowserManager opens a browser session with the configured base URL'
   })
 
   const session = await manager.open()
-  assert.equal(session.page, fakePage)
+  assert.equal(session.page.raw, fakePage)
+  assert.equal(session.page.playwrightPage, fakePage)
   assert.equal(session.context.contextOptions.baseURL, 'http://127.0.0.1:3333')
   await manager.close()
   assert.deepEqual(calls, [
     ['context:close'],
     ['browser:close'],
+  ])
+})
+
+test('createBrowserManager returns a Sounding page wrapper with raw Playwright escape hatches', async () => {
+  const calls = []
+  const handlers = {}
+  let currentUrl = 'http://127.0.0.1:3333/sign-in'
+  const fakePage = {
+    on(event, handler) {
+      handlers[event] = handler
+    },
+    url: () => currentUrl,
+    title: async () => 'Welcome back',
+    async goto(target) {
+      currentUrl = `http://127.0.0.1:3333${target}`
+      calls.push(['goto', target])
+    },
+    getByText(text) {
+      return {
+        first() {
+          return this
+        },
+        async click() {
+          calls.push(['text:click', text])
+        },
+      }
+    },
+    getByLabel(label) {
+      return {
+        first() {
+          return this
+        },
+        async fill(value) {
+          calls.push(['label:fill', label, value])
+        },
+      }
+    },
+    locator(selector) {
+      return {
+        async textContent() {
+          assert.equal(selector, 'body')
+          return 'Sign In Check your email'
+        },
+      }
+    },
+    async emulateMedia(options) {
+      calls.push(['emulateMedia', options])
+    },
+  }
+
+  const manager = createBrowserManager({
+    sails: {
+      config: {
+        appPath: '/tmp/app',
+        port: 3333,
+        sounding: {
+          browser: {
+            enabled: true,
+            projects: ['desktop'],
+            defaultProject: 'desktop',
+          },
+        },
+      },
+    },
+    getConfig: () => ({
+      browser: {
+        enabled: true,
+        projects: ['desktop'],
+        defaultProject: 'desktop',
+      },
+    }),
+    loadPlaywright: async () => ({
+      chromium: {
+        launch: async () => ({
+          newContext: async () => ({
+            newPage: async () => fakePage,
+            close: async () => {},
+          }),
+          close: async () => {},
+        }),
+      },
+      devices: {},
+    }),
+    loadPlaywrightTest: async () => null,
+  })
+
+  const session = await manager.open()
+  const page = session.page
+
+  await page.goto('/sign-in').inDarkMode()
+  await page.click('Email me a link').type('email', 'creator@example.com').press('Send link')
+  await createExpect(page).toSee('Check your email')
+  await createExpect(page).not.toSee('Forbidden')
+  createExpect(page).toHavePath('/sign-in')
+  await createExpect(page).toHaveTitle(/Welcome/)
+
+  handlers.console({ type: () => 'error', text: () => 'ReferenceError: boom' })
+  assert.throws(() => createExpect(page).toHaveNoSmoke(), /ReferenceError: boom/)
+  handlers.pageerror(new Error('hydration failed'))
+  assert.throws(() => createExpect(page).toHaveNoJavascriptErrors(), /hydration failed/)
+
+  assert.equal(page.raw, fakePage)
+  assert.deepEqual(calls, [
+    ['goto', '/sign-in'],
+    ['emulateMedia', { colorScheme: 'dark' }],
+    ['text:click', 'Email me a link'],
+    ['label:fill', 'email', 'creator@example.com'],
+    ['text:click', 'Send link'],
+  ])
+})
+
+test('createSoundingBrowserPage supports human browser affordances inspired by Pest', async () => {
+  const calls = []
+  const currentUrl = 'http://127.0.0.1:3333/dashboard'
+  const selectorFor = (selector) => ({
+    __selector: selector,
+    async textContent() {
+      calls.push(['locator:textContent', selector])
+      return selector === 'body' ? 'Dashboard Ready' : `Text for ${selector}`
+    },
+    async screenshot(options) {
+      calls.push(['locator:screenshot', selector, options])
+      return Buffer.from('fake-element-shot')
+    },
+    async scrollIntoViewIfNeeded() {
+      calls.push(['locator:scroll', selector])
+    },
+    async click(options) {
+      calls.push(['locator:click', selector, options])
+    },
+    async fill(value, options) {
+      calls.push(['locator:fill', selector, value, options])
+    },
+    async waitFor(options) {
+      calls.push(['locator:waitFor', selector, options])
+    },
+  })
+  const fakePage = {
+    on() {},
+    url: () => currentUrl,
+    locator: (selector) => selectorFor(selector),
+    getByText(text) {
+      return {
+        first() {
+          return this
+        },
+        async click(options) {
+          calls.push(['text:click', text, options])
+        },
+      }
+    },
+    getByLabel(label) {
+      return {
+        first() {
+          return this
+        },
+        async fill(value, options) {
+          calls.push(['label:fill', label, value, options])
+        },
+        async inputValue() {
+          calls.push(['label:inputValue', label])
+          return 'typed-'
+        },
+        async pressSequentially(value, options) {
+          calls.push(['label:pressSequentially', label, value, options])
+        },
+      }
+    },
+    async click(selector, options) {
+      calls.push(['click', selector, options])
+    },
+    async fill(selector, value, options) {
+      calls.push(['fill', selector, value, options])
+    },
+    async inputValue(selector) {
+      calls.push(['inputValue', selector])
+      return 'saved-'
+    },
+    async setInputFiles(selector, files, options) {
+      calls.push(['setInputFiles', selector, files, options])
+    },
+    async dragAndDrop(source, target, options) {
+      calls.push(['dragAndDrop', source, target, options])
+    },
+    async waitForSelector(selector, options) {
+      calls.push(['waitForSelector', selector, options])
+    },
+    async setViewportSize(viewport) {
+      calls.push(['setViewportSize', viewport])
+    },
+    keyboard: {
+      async press(key, options) {
+        calls.push(['keyboard:press', key, options])
+      },
+    },
+    async goBack(options) {
+      calls.push(['goBack', options])
+    },
+    async goForward(options) {
+      calls.push(['goForward', options])
+    },
+    async reload(options) {
+      calls.push(['reload', options])
+    },
+    async pause() {
+      calls.push(['pause'])
+    },
+    frameLocator(selector) {
+      calls.push(['frameLocator', selector])
+      return {
+        locator: (frameSelector) => selectorFor(`frame:${frameSelector}`),
+        getByText(text) {
+          return {
+            first() {
+              return this
+            },
+            async click() {
+              calls.push(['frame:text:click', text])
+            },
+          }
+        },
+      }
+    },
+    async content() {
+      calls.push(['content'])
+      return '<html>Dashboard</html>'
+    },
+    async evaluate(pageFunction, arg) {
+      calls.push(['evaluate', typeof pageFunction, arg])
+      return 'script-result'
+    },
+    async screenshot(options) {
+      calls.push(['screenshot', options])
+      return Buffer.from('fake-shot')
+    },
+    context() {
+      return {
+        async grantPermissions(permissions) {
+          calls.push(['grantPermissions', permissions])
+        },
+        async setGeolocation(geolocation) {
+          calls.push(['setGeolocation', geolocation])
+        },
+      }
+    },
+  }
+  const page = createSoundingBrowserPage(fakePage)
+
+  assert.equal(page.url(), currentUrl)
+  assert.equal(await page.text(), 'Dashboard Ready')
+  assert.equal(
+    await page.text('@status'),
+    'Text for [data-test="status"], [data-testid="status"]'
+  )
+  assert.equal(await page.content(), '<html>Dashboard</html>')
+  assert.equal(await page.html(), '<html>Dashboard</html>')
+  assert.equal(await page.script(() => 'ok', { from: 'test' }), 'script-result')
+  assert.equal((await page.screenshot('shot.png', { fullPage: true })).toString(), 'fake-shot')
+  assert.equal((await page.screenshotElement('@receipt', 'receipt.png')).toString(), 'fake-element-shot')
+
+  await page
+    .click('@login')
+    .typeSlowly('Search', 'billing', { delay: 5 })
+    .clear('@email')
+    .append('@email', 'owner@example.com')
+    .attach('@avatar', 'avatar.png')
+    .drag('@card', '@dropzone')
+    .wait('@ready', { state: 'visible' })
+    .scroll('@section')
+    .resize(390, 844)
+    .withGeolocation(6.5244, 3.3792, 20)
+    .key('Enter')
+    .keys(['Meta+K', 'Escape'])
+    .withinFrame('@billing-frame', async (frame) => {
+      await frame.click('Save')
+    })
+    .back({ waitUntil: 'domcontentloaded' })
+    .forward()
+    .reload()
+    .debug()
+
+  assert.deepEqual(calls, [
+    ['locator:textContent', 'body'],
+    ['locator:textContent', '[data-test="status"], [data-testid="status"]'],
+    ['content'],
+    ['content'],
+    ['evaluate', 'function', { from: 'test' }],
+    ['screenshot', { fullPage: true, path: 'shot.png' }],
+    [
+      'locator:screenshot',
+      '[data-test="receipt"], [data-testid="receipt"]',
+      { path: 'receipt.png' },
+    ],
+    ['click', '[data-test="login"], [data-testid="login"]', undefined],
+    ['label:pressSequentially', 'Search', 'billing', { delay: 5 }],
+    ['fill', '[data-test="email"], [data-testid="email"]', '', undefined],
+    ['inputValue', '[data-test="email"], [data-testid="email"]'],
+    [
+      'fill',
+      '[data-test="email"], [data-testid="email"]',
+      'saved-owner@example.com',
+      undefined,
+    ],
+    ['setInputFiles', '[data-test="avatar"], [data-testid="avatar"]', 'avatar.png', undefined],
+    [
+      'dragAndDrop',
+      '[data-test="card"], [data-testid="card"]',
+      '[data-test="dropzone"], [data-testid="dropzone"]',
+      undefined,
+    ],
+    ['waitForSelector', '[data-test="ready"], [data-testid="ready"]', { state: 'visible' }],
+    ['locator:scroll', '[data-test="section"], [data-testid="section"]'],
+    ['setViewportSize', { width: 390, height: 844 }],
+    ['grantPermissions', ['geolocation']],
+    ['setGeolocation', { latitude: 6.5244, longitude: 3.3792, accuracy: 20 }],
+    ['keyboard:press', 'Enter', undefined],
+    ['keyboard:press', 'Meta+K', undefined],
+    ['keyboard:press', 'Escape', undefined],
+    ['frameLocator', '[data-test="billing-frame"], [data-testid="billing-frame"]'],
+    ['frame:text:click', 'Save'],
+    ['goBack', { waitUntil: 'domcontentloaded' }],
+    ['goForward', undefined],
+    ['reload', undefined],
+    ['pause'],
   ])
 })
 
@@ -161,7 +487,7 @@ test('createBrowserManager resolves mobile and custom browser projects', async (
   const mobileManager = createManager()
   const mobileSession = await mobileManager.open({ project: 'mobile' })
   assert.equal(mobileSession.project, 'mobile')
-  assert.equal(mobileSession.page, fakePage)
+  assert.equal(mobileSession.page.raw, fakePage)
   await mobileManager.close()
 
   const safariManager = createManager()
