@@ -314,6 +314,17 @@ test(
 
 test('world string options are typed from JSDoc', { world: 'signed-in-user' }, async () => {})
 
+test.it('it alias is typed from JSDoc', async ({ get, expect }) => {
+  const response = await get('/health')
+
+  expect(response).toHaveStatus(200)
+})
+
+test.it.only?.('focused it alias is typed from JSDoc', async () => {})
+test.it.skip('skipped it alias is typed from JSDoc')
+test.it.todo('todo it alias is typed from JSDoc')
+test.it.concurrent('concurrent it alias is typed from JSDoc', { concurrent: true }, async () => {})
+
 test.concurrent('concurrent trial options are typed from JSDoc', { concurrent: true }, async () => {})
 
 test('browser page wrapper context is typed from JSDoc', { browser: 'mobile' }, async ({ visit, page, expect, smoke }) => {
