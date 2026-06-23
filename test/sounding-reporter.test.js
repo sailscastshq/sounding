@@ -133,6 +133,50 @@ test('formatPassedGroups accepts raw Node pass events', () => {
   assert.match(rendered, /✓ JSON paths read like product facts\s+2ms/)
 })
 
+test('formatSummary keeps final counts and duration on one quiet-label row', () => {
+  const theme = {
+    red: (value) => `[red:${value}]`,
+    green: (value) => `[green:${value}]`,
+    bold: (value) => `[bold:${value}]`,
+    dim: (value) => `[dim:${value}]`,
+    passBadge: (value) => `[pass:${value}]`,
+    failBadge: (value) => `[fail:${value}]`,
+  }
+
+  const passed = reporter.formatSummary(
+    {
+      counts: {
+        tests: 2,
+        passed: 2,
+      },
+      duration_ms: 62,
+    },
+    theme
+  )
+
+  assert.equal(
+    passed,
+    '[pass:PASS]  [dim:Tests:] [green:2 passed], 2 total  [dim:Duration:] [bold:62ms]\n'
+  )
+  assert.doesNotMatch(passed, /total\n+\s*\[dim:Duration:/)
+
+  const failed = reporter.formatSummary(
+    {
+      counts: {
+        tests: 1,
+        failed: 1,
+      },
+      duration_ms: 61,
+    },
+    theme
+  )
+
+  assert.equal(
+    failed,
+    '[fail:FAIL]  [dim:Tests:] [red:1 failed], 1 total  [dim:Duration:] [bold:61ms]\n'
+  )
+})
+
 test('formatProfileTrials renders the slowest trials in duration order', () => {
   const rendered = reporter.formatProfileTrials(
     [
