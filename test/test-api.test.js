@@ -814,6 +814,9 @@ test('test() exposes an expect-first browser page wrapper and browser visit help
           latestArtifacts: null,
         }
       },
+      async close() {
+        calls.push(['browser:close'])
+      },
     },
     async boot(options) {
       calls.push(['boot', options.mode])
@@ -969,6 +972,213 @@ test('test() lets visit select a browser project before navigation', async () =>
     ['login:as', 'owner', 'mobile-page'],
     ['emulateMedia', 'mobile-page', { colorScheme: 'dark' }],
     ['goto', 'mobile-page', '/dashboard'],
+    ['lower'],
+  ])
+})
+
+test('test() exposes browser smoke helpers for clean route collections', async () => {
+  const calls = []
+  const registrations = []
+  let currentUrl = 'http://127.0.0.1:3333/'
+  const fakePage = {
+    on() {},
+    url: () => currentUrl,
+    async goto(target) {
+      currentUrl = `http://127.0.0.1:3333${target}`
+      calls.push(['goto', target])
+    },
+  }
+  const runtime = {
+    helpers: {},
+    world: {
+      reset() {},
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+    },
+    visit: {
+      transport: 'virtual',
+      async get(target) {
+        calls.push(['inertia:visit', target])
+        return { status: 200, data: { target } }
+      },
+    },
+    sockets: {},
+    browser: {
+      async open(options) {
+        calls.push(['browser:open', options])
+        return {
+          browser: { name: 'browser' },
+          context: { name: 'context' },
+          page: fakePage,
+          project: options.project || 'desktop',
+          latestArtifacts: null,
+        }
+      },
+      async close() {
+        calls.push(['browser:close'])
+      },
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+  const baseTest = (title, options, handler) => {
+    registrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest('public pages do not smoke', async ({ visit, smoke, expect }) => {
+    const response = await visit('/inertia-dashboard')
+    assert.equal(response.status, 200)
+
+    const smokePages = await smoke(['/', '/pricing'])
+    assert.equal(smokePages.length, 2)
+    assert.deepEqual(smokePages.entries.map((entry) => entry.target), ['/', '/pricing'])
+
+    const visitedPages = await visit.all(['/contact'], { project: 'mobile' })
+    expect(visitedPages).toHaveNoSmoke()
+    assert.equal(visitedPages.entries[0].project, 'mobile')
+  })
+
+  await registrations[0].handler({})
+
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['inertia:visit', '/inertia-dashboard'],
+    ['browser:open', {}],
+    ['goto', '/'],
+    ['goto', '/pricing'],
+    ['browser:close'],
+    ['browser:open', { project: 'mobile' }],
+    ['goto', '/contact'],
+    ['lower'],
+  ])
+})
+
+test('test() reports browser smoke failures with route project and artifacts', async () => {
+  const calls = []
+  const registrations = []
+  const handlers = {}
+  const artifacts = {
+    outputDir: '/tmp/sounding-artifacts',
+    directory: '/tmp/sounding-artifacts/smoke/mobile',
+    project: 'mobile',
+    trialName: 'public pages do not smoke',
+    currentUrl: 'http://127.0.0.1:3333/pricing',
+    currentUrlPath: '/tmp/sounding-artifacts/smoke/mobile/current-url.txt',
+    screenshot: '/tmp/sounding-artifacts/smoke/mobile/screenshot.png',
+    errors: [],
+  }
+  let currentUrl = 'http://127.0.0.1:3333/'
+  const fakePage = {
+    on(event, handler) {
+      handlers[event] = handler
+    },
+    url: () => currentUrl,
+    async goto(target) {
+      currentUrl = `http://127.0.0.1:3333${target}`
+      calls.push(['goto', target])
+
+      if (target === '/pricing') {
+        handlers.console({ type: () => 'error', text: () => 'Hydration failed' })
+        handlers.pageerror(new Error('window is not defined'))
+      }
+    },
+  }
+  const runtime = {
+    helpers: {},
+    world: {
+      reset() {},
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+    },
+    visit: {
+      transport: 'virtual',
+    },
+    sockets: {},
+    browser: {
+      async open(options) {
+        calls.push(['browser:open', options])
+        return {
+          browser: { name: 'browser' },
+          context: { name: 'context' },
+          page: fakePage,
+          project: options.project || 'desktop',
+          latestArtifacts: null,
+          async captureFailureArtifacts() {
+            calls.push(['browser:captureFailureArtifacts'])
+            return artifacts
+          },
+        }
+      },
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+  const baseTest = (title, options, handler) => {
+    registrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({ baseTest, runtime })
+
+  soundingTest('public pages do not smoke', async ({ smoke }) => {
+    await smoke(['/', '/pricing', '/contact'], { project: 'mobile' })
+  })
+
+  await assert.rejects(
+    async () => {
+      await registrations[0].handler({})
+    },
+    (error) => {
+      assert.match(error.message, /Expected browser smoke check to pass/)
+      assert.match(error.message, /route: \/pricing/)
+      assert.match(error.message, /project: mobile/)
+      assert.match(error.message, /Hydration failed/)
+      assert.match(error.message, /window is not defined/)
+      assert.match(error.message, /Sounding browser artifacts:/)
+      assert.match(error.message, /screenshot\.png/)
+      return true
+    }
+  )
+
+  assert.deepEqual(calls, [
+    ['boot', 'trial'],
+    ['browser:open', { project: 'mobile' }],
+    ['goto', '/'],
+    ['goto', '/pricing'],
+    ['browser:captureFailureArtifacts'],
     ['lower'],
   ])
 })

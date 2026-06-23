@@ -25,6 +25,7 @@ The canonical Sails-native surface is:
 - request assertions can check auth/session state with `expect(response).toHaveSession('userId', user.id)` and flash messages with `expect(response).toHaveFlash('info', /welcome/i)`
 - failed response assertions include concise request/response diagnostics; set `SOUNDING_DIAGNOSTICS=verbose` for full response excerpts
 - Inertia-style visits can use `visit('/pricing')` and partial reload options like `{ component, only }`
+- browser smoke helpers can check one route or a route list with `smoke(['/pricing', '/contact'])`
 - mail assertions can check captured emails with `expect(mailbox).toHaveSentMail({ to, subject })` and `expect(mailbox.latest()).toHaveCtaUrl(/magic-link/)`
 - a trial can opt into stricter parity with `test('...', { transport: 'http' }, ...)`
 - upload trials use `FormData` over the HTTP transport so Sails can exercise real Skipper streams
@@ -504,6 +505,43 @@ Supported browser expectations:
 | `expect(page).toHaveNoConsoleLogs()` | Fail on any console message, including `log`, `warn`, `info`, and `error`. |
 | `expect(page).toHaveNoConsoleErrors()` | Fail only on `console.error`. |
 | `expect(page).toHaveNoSmoke()` | Fail on JavaScript errors or console errors. |
+
+### Browser smoke helpers
+
+Use `smoke()` for public pages where the whole point is "open these routes and
+fail if the browser sees JavaScript errors or `console.error` output":
+
+```js
+test('public pages do not smoke', async ({ smoke }) => {
+  await smoke(['/', '/pricing', '/contact'])
+})
+```
+
+`smoke()` opens a browser lazily, so an otherwise request-level trial can stay
+light until it actually needs the browser. Pass a browser project when the smoke
+check should run through a named project:
+
+```js
+test('mobile pages do not smoke', async ({ smoke }) => {
+  await smoke(['/', '/pricing'], { project: 'mobile' })
+})
+```
+
+Use `visit.all()` when you want the inspected collection back:
+
+```js
+test('public pages do not smoke', async ({ visit, expect }) => {
+  const pages = await visit.all(['/', '/pricing', '/contact'])
+
+  expect(pages).toHaveNoSmoke()
+  expect(pages.entries[0].target).toBe('/')
+})
+```
+
+Each collection entry includes the original `target`, `project`, `currentUrl`,
+captured JavaScript errors, console messages, console errors, and the wrapped
+browser `page`. On failure, Sounding stops at the first smoky route so terminal
+diagnostics and browser artifacts point at the route that actually failed.
 
 Raw Playwright access remains available through `page.raw` or
 `page.playwrightPage` when a browser flow needs a lower-level escape hatch.
