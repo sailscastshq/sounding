@@ -33,10 +33,14 @@ Options:
   --file <path>                  Run one file. May be repeated.
   --lane <name>                  Run tests under tests/<name> or test/<name>.
   --changed                      Run changed .test.js files when git metadata is available.
+  --shard <part/total>           Run one shard, for example --shard=1/4.
+  --parallel                     Run test files with Node test concurrency enabled.
   --watch                        Forward to Node watch mode.
   --reporter <name>              Use a Node reporter, or "sounding" for Sounding output.
   --reporter-destination <path>  Forward to --test-reporter-destination.
   --compact                      Keep Sounding reporter output failure-focused.
+  --profile                      Print the slowest trials before the final summary.
+  --slow <count>                 Control how many profiled trials are shown. Implies --profile.
   --verbose                      Show full stacks and verbose Sounding diagnostics.
   --raw-error                    Show raw Node/Sounding error details after formatted failures.
   --junit [path]                 Use the junit reporter.

@@ -149,6 +149,72 @@ test('buildTestCommand maps Sounding reporter mode flags to environment', () => 
   ])
 })
 
+test('buildTestCommand maps sharding, parallel, and profiling flags', () => {
+  const appPath = createTempApp()
+  const command = buildTestCommand({
+    appPath,
+    nodeExecutable: 'node',
+    argv: ['--lane', 'browser', '--shard=1/3', '--parallel', '--profile', '--slow=2'],
+  })
+
+  assert.deepEqual(command.env, {
+    SOUNDING_REPORTER_PROFILE: '1',
+    SOUNDING_REPORTER_SLOW_LIMIT: '2',
+  })
+  assert.deepEqual(command.files, ['tests/browser/login.test.js'])
+  assert.deepEqual(command.args, [
+    '--test',
+    '--test-reporter',
+    DEFAULT_REPORTER_PATH,
+    '--test-shard=1/3',
+    '--test-concurrency=true',
+    'tests/browser/login.test.js',
+  ])
+})
+
+test('buildTestCommand accepts separated shard and slow values', () => {
+  const appPath = createTempApp()
+  const command = buildTestCommand({
+    appPath,
+    nodeExecutable: 'node',
+    argv: ['--shard', '2/4', '--slow', '3', '--file', 'tests/account.test.js'],
+  })
+
+  assert.deepEqual(command.env, {
+    SOUNDING_REPORTER_PROFILE: '1',
+    SOUNDING_REPORTER_SLOW_LIMIT: '3',
+  })
+  assert.deepEqual(command.args, [
+    '--test',
+    '--test-reporter',
+    DEFAULT_REPORTER_PATH,
+    '--test-shard',
+    '2/4',
+    'tests/account.test.js',
+  ])
+})
+
+test('buildTestCommand validates friendly sharding and slow profile values', () => {
+  const appPath = createTempApp()
+
+  assert.throws(
+    () => buildTestCommand({ appPath, argv: ['--shard=0/2'] }),
+    /must use a valid part\/total shard/
+  )
+  assert.throws(
+    () => buildTestCommand({ appPath, argv: ['--shard=3/2'] }),
+    /must use a valid part\/total shard/
+  )
+  assert.throws(
+    () => buildTestCommand({ appPath, argv: ['--shard=first/second'] }),
+    /must use part\/total/
+  )
+  assert.throws(
+    () => buildTestCommand({ appPath, argv: ['--slow=0'] }),
+    /must be a positive integer/
+  )
+})
+
 test('buildTestCommand can request the Sounding reporter explicitly', () => {
   const appPath = createTempApp()
   const command = buildTestCommand({
@@ -233,6 +299,27 @@ test('bin/sounding.js shows a readable PASS block for small successful runs', ()
   assert.doesNotMatch(stdout, /Tests:\s{2,}\d/)
   assert.match(stdout, /\n\n {6}Duration: \d+ms/)
   assert.doesNotMatch(stdout, /\n\n {0,5}Duration:/)
+})
+
+test('bin/sounding.js can print the slowest trial profile', () => {
+  const appPath = createTempApp()
+  const result = spawnSync(process.execPath, [
+    path.join(__dirname, '..', 'bin', 'sounding.js'),
+    'test',
+    '--app',
+    appPath,
+    '--file',
+    'tests/account.test.js',
+    '--profile',
+    '--slow=1',
+  ], { env: createChildEnv() })
+  const stdout = result.stdout.toString()
+
+  assert.equal(result.status, 0, result.stderr.toString())
+  assert.match(stdout, /PROFILE\s+Slowest trials/)
+  assert.match(stdout, /\bpassed\s+tests\/account\.test\.js/)
+  assert.match(stdout, /account/)
+  assert.match(stdout, /PASS\s+Tests:\s+1 passed, 1 total/)
 })
 
 test('bin/sounding.js uses the Sounding reporter for failures by default', () => {
