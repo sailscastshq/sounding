@@ -253,6 +253,83 @@ There is also a small passing fixture for successful-output screenshots:
 node ./bin/sounding.js test --app examples/pretty-output-success
 ```
 
+## Plugins
+
+Sounding keeps heavy or specialized features in installable plugins. Core
+discovers plugin packages installed in your app when their package names match
+`sounding-plugin-*` or `@sounding/plugin-*`, so official plugins work as soon as
+they are added as dev dependencies.
+
+For example, stress testing lives in `sounding-plugin-stress`:
+
+```sh
+npm install -D sounding-plugin-stress
+sounding stress /api/health --duration=10 --concurrency=25
+```
+
+Plugin commands, trial helpers, and focused test methods are registered through
+the plugin package. Core also provides a small event bus for lifecycle and
+streaming use cases such as `stress:start` and `stress:done`, while keeping
+capability registration explicit and predictable.
+
+If `sounding stress` is run before the plugin is installed, Sounding prints the
+plugin install command instead of making stress testing a required dependency for
+every project.
+
+## Stress Testing
+
+Install `sounding-plugin-stress` to run real HTTP load checks from the CLI or
+inside Sounding trials.
+
+External targets run directly:
+
+```sh
+sounding stress https://staging.example.com/api/health --duration=10 --concurrency=25
+```
+
+Relative targets are Sails-native. Sounding lifts the app, then stresses the real
+HTTP route:
+
+```sh
+sounding stress /api/health --duration=10 --concurrency=25
+```
+
+Worlds and actor aliases work for local Sails app stress runs:
+
+```sh
+sounding stress /api/billing/summary \
+  --world=subscribed-creator \
+  --as=owner \
+  --duration=10 \
+  --concurrency=20
+```
+
+Inside a trial, use `test.stress()` when the behavior needs real HTTP load:
+
+```js
+const { test } = require('sounding')
+
+test.stress(
+  'billing summary stays fast under creator load',
+  { world: 'subscribed-creator' },
+  async ({ stress, expect }) => {
+    const result = await stress
+      .get('/api/billing/summary')
+      .as('owner')
+      .concurrently(20)
+      .for(10)
+      .seconds()
+
+    expect(result.requests.failed().count()).toBe(0)
+    expect(result.requests.duration().p95()).toBeLessThan(250)
+  }
+)
+```
+
+The result exposes stable metrics like `requests.count()`,
+`requests.rate()`, `requests.failed().count()`, `requests.duration().p95()`,
+and `testRun.concurrency()`.
+
 ## App lifecycle
 
 Sounding keeps a warm Sails app by default. Virtual request trials load the app without opening an HTTP listener, while HTTP, socket, and browser-capable trials lift the app so the network stack exists.

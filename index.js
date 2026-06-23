@@ -13,6 +13,7 @@ const { createSocketManager } = require('./lib/create-socket-manager')
 const { createAuthHelpers } = require('./lib/create-auth-helpers')
 const { createExpect } = require('./lib/create-expect')
 const { createTestApi } = require('./lib/create-test-api')
+const { createPluginManager } = require('./lib/create-plugin-manager')
 const { getDefaultConfig } = require('./lib/default-config')
 
 /** @typedef {import('./lib/types').SoundingSailsApp} SoundingSailsApp */
@@ -105,5 +106,6 @@ module.exports.createSocketManager = createSocketManager
 module.exports.createAuthHelpers = createAuthHelpers
 module.exports.createExpect = createExpect
 module.exports.createTestApi = createTestApi
+module.exports.createPluginManager = createPluginManager
 module.exports.getDefaultConfig = getDefaultConfig
 module.exports.createMailCapture = createMailCapture

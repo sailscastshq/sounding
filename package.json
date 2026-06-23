@@ -6,6 +6,9 @@
   "bin": {
     "sounding": "bin/sounding.js"
   },
+  "workspaces": [
+    "plugins/*"
+  ],
   "license": "MIT",
   "keywords": [
     "sails",

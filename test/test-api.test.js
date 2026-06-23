@@ -215,6 +215,103 @@ test('test() can override transport for the whole trial', async () => {
   ])
 })
 
+test('plugins can add focused test methods and trial context helpers', async () => {
+  const calls = []
+  const baseRegistrations = []
+  const plugin = {
+    name: 'fixture',
+    testMethods: {
+      stress: {
+        mode: 'stress',
+        options: {
+          transport: 'http',
+        },
+      },
+    },
+    trial({ request, options }) {
+      calls.push(['plugin:trial', request.transport, options.transport])
+      return {
+        stress: {
+          transport: request.transport,
+        },
+      }
+    },
+  }
+  const runtime = {
+    helpers: {},
+    world: {
+      use: async () => ({}),
+    },
+    mailbox: {
+      latest: () => null,
+    },
+    request: {
+      transport: 'virtual',
+      using(transport) {
+        calls.push(['request:using', transport])
+        return {
+          transport,
+          get: async () => ({
+            status: 200,
+            data: { ok: true },
+            header: () => null,
+          }),
+        }
+      },
+    },
+    visit: {
+      transport: 'virtual',
+      using(transport) {
+        calls.push(['visit:using', transport])
+        return {
+          transport,
+        }
+      },
+    },
+    async boot(options) {
+      calls.push(['boot', options.mode])
+      return {
+        sails: {
+          config: {},
+        },
+      }
+    },
+    async lower() {
+      calls.push(['lower'])
+    },
+  }
+
+  const baseTest = (title, options, handler) => {
+    baseRegistrations.push({ title, options, handler })
+    return { title }
+  }
+  baseTest.skip = () => {}
+  baseTest.todo = () => {}
+
+  const soundingTest = createTestApi({
+    baseTest,
+    runtime,
+    plugins: [plugin],
+  })
+
+  assert.equal(typeof soundingTest.stress, 'function')
+
+  soundingTest.stress('billing is steady', async ({ stress, request, expect }) => {
+    assert.equal(stress.transport, 'http')
+    assert.equal(request.transport, 'http')
+    expect(await request.get('/health')).toHaveStatus(200)
+  })
+
+  await baseRegistrations[0].handler({})
+  assert.deepEqual(calls, [
+    ['boot', 'stress'],
+    ['request:using', 'http'],
+    ['visit:using', 'http'],
+    ['plugin:trial', 'http', 'http'],
+    ['lower'],
+  ])
+})
+
 test('test() can auto-load a world before the trial handler', async () => {
   const calls = []
   const baseRegistrations = []

@@ -1,0 +1,13 @@
+{
+  "name": "sounding-plugin-stress",
+  "version": "0.1.0",
+  "description": "Stress testing plugin for Sounding.",
+  "main": "index.js",
+  "license": "MIT",
+  "peerDependencies": {
+    "sounding": "^0.1.0"
+  },
+  "dependencies": {
+    "autocannon": "^8.0.0"
+  }
+}

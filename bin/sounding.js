@@ -2,6 +2,10 @@
 
 const { initProject } = require('../lib/init-project')
 const { formatTestCommand, runTests } = require('../lib/test-runner')
+const {
+  createMissingStressPluginError,
+  createPluginManager,
+} = require('../lib/create-plugin-manager')
 
 function printHelp() {
   process.stdout.write(`Sounding
@@ -9,10 +13,13 @@ function printHelp() {
 Usage:
   sounding init [--app <path>] [--config]
   sounding test [options] [files or folders]
+  sounding <plugin-command> [options]
 
 Commands:
   init      Scaffold Sounding tests, worlds, and package scripts in a Sails app.
   test      Run Sounding trials through the Node.js test runner.
+
+Plugin commands are discovered from installed packages like sounding-plugin-stress.
 
 Options:
   --app     Target app directory. Defaults to the current working directory.
@@ -76,6 +83,13 @@ function parseArgs(argv) {
     }
   }
 
+  if (command && command !== 'init') {
+    return {
+      command,
+      options: parsePluginCommandArgs(args),
+    }
+  }
+
   while (args.length > 0) {
     const arg = args.shift()
 
@@ -106,6 +120,35 @@ function parseArgs(argv) {
   }
 }
 
+function parsePluginCommandArgs(argv) {
+  const args = [...argv]
+  const forwarded = []
+  const options = {
+    argv: forwarded,
+  }
+
+  while (args.length > 0) {
+    const arg = args.shift()
+
+    if (arg === '--app') {
+      options.appPath = args.shift()
+      if (!options.appPath) {
+        throw new Error('Sounding option `--app` requires a path.')
+      }
+      continue
+    }
+
+    if (arg.startsWith('--app=')) {
+      options.appPath = arg.slice('--app='.length)
+      continue
+    }
+
+    forwarded.push(arg)
+  }
+
+  return options
+}
+
 function printInitResult(result) {
   process.stdout.write(`Sounding initialized ${result.appPath}\n`)
   process.stdout.write(
@@ -123,12 +166,17 @@ function printInitResult(result) {
 async function main() {
   const { command, options } = parseArgs(process.argv.slice(2))
 
-  if (!command || options.help) {
+  if (!command) {
     printHelp()
     return
   }
 
   if (command === 'init') {
+    if (options.help) {
+      printHelp()
+      return
+    }
+
     const result = initProject(options)
     printInitResult(result)
     return
@@ -153,9 +201,30 @@ async function main() {
     return
   }
 
-  {
-    throw new Error(`Unknown Sounding command: ${command}`)
+  const plugins = createPluginManager({
+    appPath: options.appPath || process.cwd(),
+  })
+  const pluginCommand = plugins.command(command)
+
+  if (pluginCommand) {
+    const result = await pluginCommand.command(options.argv || [], {
+      appPath: plugins.appPath,
+      command,
+      plugin: pluginCommand.plugin,
+      stdout: process.stdout,
+      stderr: process.stderr,
+    })
+
+    process.exitCode =
+      typeof result === 'number' ? result : result?.status === undefined ? 0 : result.status
+    return
   }
+
+  if (command === 'stress') {
+    throw createMissingStressPluginError()
+  }
+
+  throw new Error(`Unknown Sounding command: ${command}`)
 }
 
 main().catch((error) => {
