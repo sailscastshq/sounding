@@ -316,7 +316,7 @@ test('world string options are typed from JSDoc', { world: 'signed-in-user' }, a
 
 test.concurrent('concurrent trial options are typed from JSDoc', { concurrent: true }, async () => {})
 
-test('browser page wrapper context is typed from JSDoc', { browser: 'mobile' }, async ({ visit, page, expect }) => {
+test('browser page wrapper context is typed from JSDoc', { browser: 'mobile' }, async ({ visit, page, expect, smoke }) => {
   const visitedPage = await visit('/dashboard').inDarkMode()
 
   await visitedPage
@@ -352,6 +352,16 @@ test('browser page wrapper context is typed from JSDoc', { browser: 'mobile' }, 
   })
 
   await visit('/mobile-dashboard').onMobile()
+
+  const smokePages = await smoke(['/', '/pricing'], { project: 'mobile' })
+  expect(smokePages).toHaveNoSmoke()
+  smokePages.entries[0].target
+  smokePages.entries[0].currentUrl
+  smokePages.entries[0].project
+  smokePages.pages[0].raw
+
+  const visitedPages = await visit.all(['/contact', '/about'])
+  expect(visitedPages).toHaveNoSmoke()
 
   await expect(visitedPage).toSee('Dashboard')
   await expect(visitedPage).not.toSee('Forbidden')
