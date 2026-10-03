@@ -499,10 +499,21 @@ SOUNDING_HOOK_ROOT=/path/to/sails-hook-node-fetch node --test examples/hooks/nod
 That fixture excludes ORM and does not connect a datastore or make outbound
 requests. Its placeholder `datastores.default` satisfies the current Sounding
 runtime's required datastore config. A first-class datastore-free hook fixture
-is still needed. This example uses existing manager/trial APIs plus the local
-`loadOptions` addition; the proposed `sounding-plugin-hook`, automatic fixture
-creation, `{ hook }`, `test.hookFails`, and `test.hookFactory` API in
-[issue #101](https://github.com/sailscastshq/sounding/issues/101) remains unimplemented.
+is still needed. This explicit example uses manager/trial APIs plus the local `loadOptions`
+addition. An **unpublished local hook-plugin MVP** now implements generated
+fixtures, pre-boot configuration and `{ hook }` context with the normal
+`require('sounding').test` import. See [its setup and contract](plugins/hook/README.md).
+`test.hookFails`, `test.hookFactory` and package-discovery mounts in
+[issue #101](https://github.com/sailscastshq/sounding/issues/101) remain follow-ups.
+Run the small real-hook plugin demo with:
+
+```sh
+SOUNDING_HOOK_ROOT=/path/to/sails-hook-node-fetch node examples/hooks/run-plugin-demo.js
+```
+
+That driver registers both local packages in a disposable hook project. The
+released `sounding@0.2.0` package does not have this API; local package versions
+are deliberately unchanged pending a publication decision.
 
 For reproducible lifecycle measurements, run:
 

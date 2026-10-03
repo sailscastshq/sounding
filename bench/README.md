@@ -1,5 +1,9 @@
 # Hook lifecycle audit — 2026-10-03
 
+This is the historical lifecycle-only snapshot at `2019d68`. The resumed
+[hook-plugin MVP report](hook-plugin-report.md) records the subsequently
+implemented API, final checks and new benchmark results.
+
 This is an **unreleased local improvement**, not completion of issue #101.
 
 Source: `sailscastshq/sounding`, base `aa3dd8b5bcd104c99d6df7d20c267d1108849304`,
