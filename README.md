@@ -455,6 +455,68 @@ console.log(manager.lifecycle.lift.status)
 
 Set `SOUNDING_LIFECYCLE=verbose` or `SOUNDING_DIAGNOSTICS=verbose` to print app load/lift timing messages while the suite runs.
 
+### Testing a reusable hook with the current app manager
+
+A constructor can pass `loadOptions` for load-mode overrides, just as `liftOptions`
+controls lift mode. Constructor overrides merge over `config/sounding.js` for
+that mode. Use `globals: false`, select only the required hooks with `loadHooks`,
+and keep a separate temporary fixture per isolated suite.
+
+```js
+const { createAppManager } = require('sounding')
+const manager = createAppManager({
+  appPath: fixturePath,
+  loadOptions: {
+    globals: false,
+    hooks: { example: require('../'), grunt: false },
+    example: { enabled: true }
+  }
+})
+try {
+  const sails = await manager.load()
+  // Assert against the real sails.hooks.example / sails.helpers / sails.config.
+  await manager.load({ reload: true }) // fresh Sails instance and hook state
+} finally {
+  await manager.lower()
+}
+```
+
+`manager.lower()` waits for an in-flight load/lift, attempts teardown of both
+instances, resets manager globals/output filtering, and rejects if Sails reports
+cleanup errors. If a caller manually boots a Sounding runtime, call
+`runtime.lower()` to close its trial resources as well; Sounding trials do that
+automatically.
+
+The executable [node-fetch hook example](examples/hooks/node-fetch.test.js)
+uses real Sails helper furnishing, config overrides, Sounding trial assertions,
+explicit reload isolation, and temporary-file cleanup. Run it against a local
+hook checkout with:
+
+```sh
+SOUNDING_HOOK_ROOT=/path/to/sails-hook-node-fetch node --test examples/hooks/node-fetch.test.js
+```
+
+That fixture excludes ORM and does not connect a datastore or make outbound
+requests. Its placeholder `datastores.default` satisfies the current Sounding
+runtime's required datastore config. A first-class datastore-free hook fixture
+is still needed. This example uses existing manager/trial APIs plus the local
+`loadOptions` addition; the proposed `sounding-plugin-hook`, automatic fixture
+creation, `{ hook }`, `test.hookFails`, and `test.hookFactory` API in
+[issue #101](https://github.com/sailscastshq/sounding/issues/101) remains unimplemented.
+
+For reproducible lifecycle measurements, run:
+
+```sh
+SOUNDING_BASELINE=/path/to/main-archive SOUNDING_HOOK_ROOT=/path/to/sails-hook-node-fetch node bench/compare.js
+```
+
+The benchmark alternates eight fresh processes per version and records raw
+samples for factory unit work, initial Sails load, warm reuse, reload isolation,
+virtual/HTTP requests, context concurrency, and cleanup. Runtime concurrency
+shares the Sails app and hook state; these fixtures perform no shared mutations.
+Browser startup is not measured unless real browser tooling is installed, and
+no browser timing is inferred from mocked tests.
+
 ## Concurrent trials
 
 Sounding runs trials serially by default. That keeps shared Sails app state boring while request sessions, worlds, mailboxes, sockets, and browser sessions continue to reset between trials.

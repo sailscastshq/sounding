@@ -194,6 +194,7 @@ runtime.boot({ mode: 'trial' }).then((booted) => {
 })
 
 const appManager = createAppManager({
+  loadOptions: { globals: false, hooks: { grunt: false } },
   appPath: process.cwd(),
   environment: 'test',
   liftOptions: {
