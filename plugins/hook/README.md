@@ -145,3 +145,26 @@ This intentionally exits with status 1: the first trial reports the sentinel
 error, the next trial still proves fresh hook state/config, and the final cleanup
 assertions verify both fixture directories are gone. The flag is only a demo
 trigger; it does not turn failures into successes.
+
+## Shipwright: a manifest-to-HTML contract
+
+From the Sounding worktree, run:
+
+```sh
+SOUNDING_HOOK_ROOT=/Users/koo/Gringotts/687/sails-hook-shipwright node examples/hooks/run-plugin-demo.js shipwright
+```
+
+The driver registers the local core/plugin and Sails in a disposable project,
+loads the real Shipwright package entry, and runs `examples/hooks/shipwright.test.js`.
+The 15-line test supplies a manifest with initial JS/CSS and an async JS chunk.
+It asserts exact generated script/link tags and verifies the view-local generator
+matches the hook API. This checks manifest consumption and HTML output, not an
+Rsbuild build or browser loading behavior.
+
+`hook.config.dontLift: true` is explicit: Shipwright's initializer checks that
+Sails config flag before starting Rsbuild. Plain Sails.load does not set it in
+this harness. This leaves configure/defaults/helper setup real while skipping
+build/dev-server startup. A fresh fixture and its cleanup remain harness-owned.
+
+Verified with Shipwright 1.5.1 at `f233659eb9749157f78fd84e780175f96b95bbe0`,
+Sails 1.5.18 and Node v24.14.1. The core package import remains `sounding`.

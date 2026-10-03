@@ -4,7 +4,7 @@ const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 const hookRoot = process.env.SOUNDING_HOOK_ROOT
-if (!hookRoot) throw new Error('Set SOUNDING_HOOK_ROOT to a local sails-hook-node-fetch checkout.')
+if (!hookRoot) throw new Error('Set SOUNDING_HOOK_ROOT to a local Sails hook checkout.')
 const coreRoot = path.resolve(process.env.SOUNDING_CORE_ROOT || path.join(__dirname, '../..'))
 const pluginRoot = path.resolve(
   process.env.SOUNDING_PLUGIN_ROOT || path.join(__dirname, '../../plugins/hook')
@@ -15,6 +15,7 @@ if (
 ) {
   throw new Error('The local demo requires the sounding core and sounding-plugin-hook packages.')
 }
+const demoFile = process.argv[2] === 'shipwright' ? 'shipwright.test.js' : 'plugin-node-fetch.test.js'
 const project = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-real-hook-demo-'))
 try {
   const pkg = require(path.join(path.resolve(hookRoot), 'package.json'))
@@ -48,7 +49,7 @@ try {
   fs.writeFileSync(
     path.join(project, 'test.js'),
     `require('node:assert/strict').equal(require.resolve('sounding'),${JSON.stringify(path.join(fs.realpathSync(coreRoot), 'index.js'))})\n` +
-      fs.readFileSync(path.join(__dirname, 'plugin-node-fetch.test.js'), 'utf8')
+      fs.readFileSync(path.join(__dirname, demoFile), 'utf8')
   )
   const env = { ...process.env }
   delete env.NODE_TEST_CONTEXT

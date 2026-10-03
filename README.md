@@ -505,11 +505,15 @@ fixtures, pre-boot configuration and `{ hook }` context with the normal
 `require('sounding').test` import. See [its setup and contract](plugins/hook/README.md).
 `test.hookFails`, `test.hookFactory` and package-discovery mounts in
 [issue #101](https://github.com/sailscastshq/sounding/issues/101) remain follow-ups.
-Run the small real-hook plugin demo with:
+Run a real Shipwright manifest-to-HTML contract with:
 
 ```sh
-SOUNDING_HOOK_ROOT=/path/to/sails-hook-node-fetch node examples/hooks/run-plugin-demo.js
+SOUNDING_HOOK_ROOT=/path/to/sails-hook-shipwright node examples/hooks/run-plugin-demo.js shipwright
 ```
+
+The [small Shipwright test](examples/hooks/shipwright.test.js) asserts exact JS/CSS
+tags, excludes async chunks, and checks view-local integration. It supplies
+`dontLift: true` explicitly to skip Shipwright's Rsbuild startup.
 
 That driver registers both local packages in a disposable hook project. The
 released `sounding@0.2.0` package does not have this API; local package versions
