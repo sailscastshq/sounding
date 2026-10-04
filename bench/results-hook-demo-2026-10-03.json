@@ -1,0 +1,56 @@
+{
+  "node": "v24.14.1",
+  "platform": "darwin/arm64",
+  "method": "Eight fresh processes; includes local package materialization, real node-fetch hook furnishing, per-trial isolation/config assertions and teardown. No outbound requests.",
+  "medianMs": 225.10241700000006,
+  "samples": [
+    {
+      "round": 0,
+      "totalProcessMs": 221.660709,
+      "stdout": "✔ loads the real hook and furnishes fetch (100.077458ms)\n✔ isolates hook state and applies fixture config (4.456041ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 158.62525\n",
+      "stderr": ""
+    },
+    {
+      "round": 1,
+      "totalProcessMs": 224.330209,
+      "stdout": "✔ loads the real hook and furnishes fetch (100.606666ms)\n✔ isolates hook state and applies fixture config (4.789041ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 160.319875\n",
+      "stderr": ""
+    },
+    {
+      "round": 2,
+      "totalProcessMs": 226.59104199999996,
+      "stdout": "✔ loads the real hook and furnishes fetch (101.087625ms)\n✔ isolates hook state and applies fixture config (5.002167ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 162.940875\n",
+      "stderr": ""
+    },
+    {
+      "round": 3,
+      "totalProcessMs": 226.95412499999998,
+      "stdout": "✔ loads the real hook and furnishes fetch (101.108584ms)\n✔ isolates hook state and applies fixture config (4.503208ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 164.122125\n",
+      "stderr": ""
+    },
+    {
+      "round": 4,
+      "totalProcessMs": 239.0257919999999,
+      "stdout": "✔ loads the real hook and furnishes fetch (108.247208ms)\n✔ isolates hook state and applies fixture config (5.017666ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 174.596625\n",
+      "stderr": ""
+    },
+    {
+      "round": 5,
+      "totalProcessMs": 224.38729200000012,
+      "stdout": "✔ loads the real hook and furnishes fetch (99.48325ms)\n✔ isolates hook state and applies fixture config (4.450208ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 159.216875\n",
+      "stderr": ""
+    },
+    {
+      "round": 6,
+      "totalProcessMs": 223.96204199999988,
+      "stdout": "✔ loads the real hook and furnishes fetch (100.056916ms)\n✔ isolates hook state and applies fixture config (4.501416ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 160.175416\n",
+      "stderr": ""
+    },
+    {
+      "round": 7,
+      "totalProcessMs": 225.817542,
+      "stdout": "✔ loads the real hook and furnishes fetch (103.010875ms)\n✔ isolates hook state and applies fixture config (4.684792ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 163.057125\n",
+      "stderr": ""
+    }
+  ]
+}

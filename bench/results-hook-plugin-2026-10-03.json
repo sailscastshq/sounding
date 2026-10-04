@@ -1,0 +1,1735 @@
+{
+  "method": "Eight alternating fresh child processes per version, one fixture round each; timings include measured cleanup; no browser dependency installed.",
+  "summary": {
+    "baseline": {
+      "totalProcessMs": 240.97677099999987,
+      "factory-unit": 0.21677049999999554,
+      "load-fresh-instance": 35.6842495,
+      "load-warm": 0.02014549999999815,
+      "load-coalesced-8": 0.049624999999991815,
+      "runtime-serial-8": 1.3879789999999872,
+      "runtime-concurrent-8": 0.6764584999999954,
+      "load-isolated-reload": 4.955208499999998,
+      "load-cleanup": 0.09456250000000921,
+      "load-virtual": 52.7234375,
+      "request-virtual": 9.990978999999996,
+      "lift-http": 6.544646,
+      "request-http": 10.698521000000014,
+      "lift-cleanup": 0.36599999999998545
+    },
+    "current": {
+      "totalProcessMs": 241.47314549999987,
+      "factory-unit": 0.21493749999999778,
+      "load-fresh-instance": 35.8157915,
+      "load-warm": 0.020229000000000497,
+      "load-coalesced-8": 0.05002100000001519,
+      "runtime-serial-8": 1.4399795000000069,
+      "runtime-concurrent-8": 0.6880204999999933,
+      "load-isolated-reload": 5.037561999999994,
+      "load-cleanup": 0.11677099999999996,
+      "load-virtual": 52.856978999999995,
+      "request-virtual": 9.632145999999992,
+      "lift-http": 6.446437500000002,
+      "request-http": 10.8411665,
+      "lift-cleanup": 0.3713545000000096
+    }
+  },
+  "samples": [
+    {
+      "round": 0,
+      "label": "baseline",
+      "totalProcessMs": 238.869,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding-baseline",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.20933300000000088
+        },
+        "load-fresh-instance": {
+          "medianMs": 35.228667000000016
+        },
+        "load-warm": {
+          "medianMs": 0.01779200000001424
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.05150000000000432
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.3968749999999943
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6584159999999883
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.831165999999996
+        },
+        "load-cleanup": {
+          "medianMs": 0.09908300000000736
+        },
+        "load-virtual": {
+          "medianMs": 52.202957999999995
+        },
+        "request-virtual": {
+          "medianMs": 9.479667000000006
+        },
+        "lift-http": {
+          "medianMs": 6.303832999999997
+        },
+        "request-http": {
+          "medianMs": 10.688583999999992
+        },
+        "lift-cleanup": {
+          "medianMs": 0.3639579999999967
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.20933300000000088
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 35.228667000000016
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.01779200000001424
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.05150000000000432
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.3968749999999943
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6584159999999883
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.831165999999996
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.09908300000000736
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.202957999999995
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.479667000000006
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.303832999999997
+        },
+        {
+          "name": "request-http",
+          "ms": 10.688583999999992
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.3639579999999967
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "label": "current",
+      "totalProcessMs": 234.789666,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.19291699999999423
+        },
+        "load-fresh-instance": {
+          "medianMs": 34.815833999999995
+        },
+        "load-warm": {
+          "medianMs": 0.02008299999999963
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.048042000000009466
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.4207090000000164
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.648666999999989
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.93395799999999
+        },
+        "load-cleanup": {
+          "medianMs": 0.11591699999999605
+        },
+        "load-virtual": {
+          "medianMs": 52.113292
+        },
+        "request-virtual": {
+          "medianMs": 9.438041999999996
+        },
+        "lift-http": {
+          "medianMs": 6.280458999999979
+        },
+        "request-http": {
+          "medianMs": 10.727790999999996
+        },
+        "lift-cleanup": {
+          "medianMs": 0.3646669999999972
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.19291699999999423
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 34.815833999999995
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.02008299999999963
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.048042000000009466
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.4207090000000164
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.648666999999989
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.93395799999999
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.11591699999999605
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.113292
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.438041999999996
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.280458999999979
+        },
+        {
+          "name": "request-http",
+          "ms": 10.727790999999996
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.3646669999999972
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "label": "current",
+      "totalProcessMs": 239.39191699999998,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.20466600000000312
+        },
+        "load-fresh-instance": {
+          "medianMs": 35.781082999999995
+        },
+        "load-warm": {
+          "medianMs": 0.02266700000001265
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.056250000000005684
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.4592499999999973
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6747079999999812
+        },
+        "load-isolated-reload": {
+          "medianMs": 5.3368750000000205
+        },
+        "load-cleanup": {
+          "medianMs": 0.12854100000001267
+        },
+        "load-virtual": {
+          "medianMs": 52.804833
+        },
+        "request-virtual": {
+          "medianMs": 9.458082999999988
+        },
+        "lift-http": {
+          "medianMs": 6.253917000000001
+        },
+        "request-http": {
+          "medianMs": 11.451667000000015
+        },
+        "lift-cleanup": {
+          "medianMs": 0.38683399999999324
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.20466600000000312
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 35.781082999999995
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.02266700000001265
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.056250000000005684
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.4592499999999973
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6747079999999812
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 5.3368750000000205
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.12854100000001267
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.804833
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.458082999999988
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.253917000000001
+        },
+        {
+          "name": "request-http",
+          "ms": 11.451667000000015
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.38683399999999324
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "label": "baseline",
+      "totalProcessMs": 249.79216700000006,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding-baseline",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.23533299999999713
+        },
+        "load-fresh-instance": {
+          "medianMs": 36.87641699999999
+        },
+        "load-warm": {
+          "medianMs": 0.019915999999994938
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.05458299999997962
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.44987500000002
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6959580000000187
+        },
+        "load-isolated-reload": {
+          "medianMs": 5.5222499999999854
+        },
+        "load-cleanup": {
+          "medianMs": 0.1006670000000156
+        },
+        "load-virtual": {
+          "medianMs": 55.17316700000001
+        },
+        "request-virtual": {
+          "medianMs": 10.408874999999995
+        },
+        "lift-http": {
+          "medianMs": 6.771792000000005
+        },
+        "request-http": {
+          "medianMs": 10.674166000000014
+        },
+        "lift-cleanup": {
+          "medianMs": 0.36566599999997607
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.23533299999999713
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 36.87641699999999
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.019915999999994938
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.05458299999997962
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.44987500000002
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6959580000000187
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 5.5222499999999854
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.1006670000000156
+        },
+        {
+          "name": "load-virtual",
+          "ms": 55.17316700000001
+        },
+        {
+          "name": "request-virtual",
+          "ms": 10.408874999999995
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.771792000000005
+        },
+        {
+          "name": "request-http",
+          "ms": 10.674166000000014
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.36566599999997607
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "label": "baseline",
+      "totalProcessMs": 239.95858299999998,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding-baseline",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.21691599999999767
+        },
+        "load-fresh-instance": {
+          "medianMs": 35.416917
+        },
+        "load-warm": {
+          "medianMs": 0.020375000000001364
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.05283299999999258
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.4025419999999826
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6567919999999958
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.864833000000004
+        },
+        "load-cleanup": {
+          "medianMs": 0.09287499999999227
+        },
+        "load-virtual": {
+          "medianMs": 53.11529199999998
+        },
+        "request-virtual": {
+          "medianMs": 10.356375000000014
+        },
+        "lift-http": {
+          "medianMs": 6.770666000000006
+        },
+        "request-http": {
+          "medianMs": 11.843290999999994
+        },
+        "lift-cleanup": {
+          "medianMs": 0.39108300000000895
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.21691599999999767
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 35.416917
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.020375000000001364
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.05283299999999258
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.4025419999999826
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6567919999999958
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.864833000000004
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.09287499999999227
+        },
+        {
+          "name": "load-virtual",
+          "ms": 53.11529199999998
+        },
+        {
+          "name": "request-virtual",
+          "ms": 10.356375000000014
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.770666000000006
+        },
+        {
+          "name": "request-http",
+          "ms": 11.843290999999994
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.39108300000000895
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "label": "current",
+      "totalProcessMs": 273.9644169999999,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.2201249999999959
+        },
+        "load-fresh-instance": {
+          "medianMs": 34.59295799999998
+        },
+        "load-warm": {
+          "medianMs": 0.017416999999994687
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.04754199999999287
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.3648340000000019
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6678750000000093
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.956832999999989
+        },
+        "load-cleanup": {
+          "medianMs": 0.11420899999998824
+        },
+        "load-virtual": {
+          "medianMs": 51.93283299999999
+        },
+        "request-virtual": {
+          "medianMs": 9.665999999999997
+        },
+        "lift-http": {
+          "medianMs": 6.321666999999991
+        },
+        "request-http": {
+          "medianMs": 10.853332999999992
+        },
+        "lift-cleanup": {
+          "medianMs": 0.36350000000001614
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.2201249999999959
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 34.59295799999998
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.017416999999994687
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.04754199999999287
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.3648340000000019
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6678750000000093
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.956832999999989
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.11420899999998824
+        },
+        {
+          "name": "load-virtual",
+          "ms": 51.93283299999999
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.665999999999997
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.321666999999991
+        },
+        {
+          "name": "request-http",
+          "ms": 10.853332999999992
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.36350000000001614
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "label": "current",
+      "totalProcessMs": 239.13275,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.2009999999999934
+        },
+        "load-fresh-instance": {
+          "medianMs": 34.751791999999995
+        },
+        "load-warm": {
+          "medianMs": 0.017833999999993466
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.04558400000001939
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.3674589999999966
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.7120830000000069
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.844957999999991
+        },
+        "load-cleanup": {
+          "medianMs": 0.11762500000000387
+        },
+        "load-virtual": {
+          "medianMs": 52.90912499999999
+        },
+        "request-virtual": {
+          "medianMs": 9.598291999999987
+        },
+        "lift-http": {
+          "medianMs": 6.813333
+        },
+        "request-http": {
+          "medianMs": 10.829000000000008
+        },
+        "lift-cleanup": {
+          "medianMs": 0.3713340000000187
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.2009999999999934
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 34.751791999999995
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.017833999999993466
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.04558400000001939
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.3674589999999966
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.7120830000000069
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.844957999999991
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.11762500000000387
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.90912499999999
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.598291999999987
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.813333
+        },
+        {
+          "name": "request-http",
+          "ms": 10.829000000000008
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.3713340000000187
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "label": "baseline",
+      "totalProcessMs": 240.50900000000001,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding-baseline",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.2047500000000042
+        },
+        "load-fresh-instance": {
+          "medianMs": 35.409542
+        },
+        "load-warm": {
+          "medianMs": 0.017249999999989996
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.045250000000010004
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.3686670000000163
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6713330000000042
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.89345800000001
+        },
+        "load-cleanup": {
+          "medianMs": 0.09187500000001592
+        },
+        "load-virtual": {
+          "medianMs": 52.15462499999998
+        },
+        "request-virtual": {
+          "medianMs": 10.388666
+        },
+        "lift-http": {
+          "medianMs": 7.466834000000006
+        },
+        "request-http": {
+          "medianMs": 11.114042000000012
+        },
+        "lift-cleanup": {
+          "medianMs": 0.39375000000001137
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.2047500000000042
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 35.409542
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.017249999999989996
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.045250000000010004
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.3686670000000163
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6713330000000042
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.89345800000001
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.09187500000001592
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.15462499999998
+        },
+        {
+          "name": "request-virtual",
+          "ms": 10.388666
+        },
+        {
+          "name": "lift-http",
+          "ms": 7.466834000000006
+        },
+        {
+          "name": "request-http",
+          "ms": 11.114042000000012
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.39375000000001137
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "label": "baseline",
+      "totalProcessMs": 242.36629199999993,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding-baseline",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.219167000000013
+        },
+        "load-fresh-instance": {
+          "medianMs": 35.552415999999994
+        },
+        "load-warm": {
+          "medianMs": 0.020375000000001364
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.04624999999998636
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.3706249999999898
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6657920000000104
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.962792000000007
+        },
+        "load-cleanup": {
+          "medianMs": 0.09404100000000426
+        },
+        "load-virtual": {
+          "medianMs": 52.50870800000001
+        },
+        "request-virtual": {
+          "medianMs": 9.509875000000022
+        },
+        "lift-http": {
+          "medianMs": 6.329750000000018
+        },
+        "request-http": {
+          "medianMs": 10.592583999999988
+        },
+        "lift-cleanup": {
+          "medianMs": 0.3605839999999887
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.219167000000013
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 35.552415999999994
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.020375000000001364
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.04624999999998636
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.3706249999999898
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6657920000000104
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.962792000000007
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.09404100000000426
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.50870800000001
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.509875000000022
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.329750000000018
+        },
+        {
+          "name": "request-http",
+          "ms": 10.592583999999988
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.3605839999999887
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "label": "current",
+      "totalProcessMs": 239.82241599999998,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.225750000000005
+        },
+        "load-fresh-instance": {
+          "medianMs": 37.297416999999996
+        },
+        "load-warm": {
+          "medianMs": 0.018124999999997726
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.04545899999999392
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.3721249999999827
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.7231250000000102
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.897041999999999
+        },
+        "load-cleanup": {
+          "medianMs": 0.11579100000000153
+        },
+        "load-virtual": {
+          "medianMs": 52.11004200000002
+        },
+        "request-virtual": {
+          "medianMs": 9.488957999999997
+        },
+        "lift-http": {
+          "medianMs": 6.4392500000000155
+        },
+        "request-http": {
+          "medianMs": 10.746792
+        },
+        "lift-cleanup": {
+          "medianMs": 0.36916700000000446
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.225750000000005
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 37.297416999999996
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.018124999999997726
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.04545899999999392
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.3721249999999827
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.7231250000000102
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.897041999999999
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.11579100000000153
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.11004200000002
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.488957999999997
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.4392500000000155
+        },
+        {
+          "name": "request-http",
+          "ms": 10.746792
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.36916700000000446
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "label": "current",
+      "totalProcessMs": 243.12387499999977,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.2514579999999995
+        },
+        "load-fresh-instance": {
+          "medianMs": 37.248999999999995
+        },
+        "load-warm": {
+          "medianMs": 0.020375000000001364
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.05200000000002092
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.8359579999999767
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.7678750000000036
+        },
+        "load-isolated-reload": {
+          "medianMs": 5.187708000000015
+        },
+        "load-cleanup": {
+          "medianMs": 0.11549999999999727
+        },
+        "load-virtual": {
+          "medianMs": 55.981374999999986
+        },
+        "request-virtual": {
+          "medianMs": 9.800542000000007
+        },
+        "lift-http": {
+          "medianMs": 6.624125000000021
+        },
+        "request-http": {
+          "medianMs": 11.131958999999995
+        },
+        "lift-cleanup": {
+          "medianMs": 0.40358399999999506
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.2514579999999995
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 37.248999999999995
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.020375000000001364
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.05200000000002092
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.8359579999999767
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.7678750000000036
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 5.187708000000015
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.11549999999999727
+        },
+        {
+          "name": "load-virtual",
+          "ms": 55.981374999999986
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.800542000000007
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.624125000000021
+        },
+        {
+          "name": "request-http",
+          "ms": 11.131958999999995
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.40358399999999506
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "label": "baseline",
+      "totalProcessMs": 241.44454199999973,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding-baseline",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.2166249999999934
+        },
+        "load-fresh-instance": {
+          "medianMs": 36.699500000000015
+        },
+        "load-warm": {
+          "medianMs": 0.020833000000010315
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.046750000000002956
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.3692499999999939
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6815839999999866
+        },
+        "load-isolated-reload": {
+          "medianMs": 5.013457999999986
+        },
+        "load-cleanup": {
+          "medianMs": 0.09499999999999886
+        },
+        "load-virtual": {
+          "medianMs": 52.376041999999984
+        },
+        "request-virtual": {
+          "medianMs": 9.749042000000003
+        },
+        "lift-http": {
+          "medianMs": 6.339958999999993
+        },
+        "request-http": {
+          "medianMs": 10.698625000000021
+        },
+        "lift-cleanup": {
+          "medianMs": 0.36529200000001083
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.2166249999999934
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 36.699500000000015
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.020833000000010315
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.046750000000002956
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.3692499999999939
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6815839999999866
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 5.013457999999986
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.09499999999999886
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.376041999999984
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.749042000000003
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.339958999999993
+        },
+        {
+          "name": "request-http",
+          "ms": 10.698625000000021
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.36529200000001083
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "label": "baseline",
+      "totalProcessMs": 235.5428340000003,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding-baseline",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.21162499999999795
+        },
+        "load-fresh-instance": {
+          "medianMs": 35.816083000000006
+        },
+        "load-warm": {
+          "medianMs": 0.019875000000013188
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.04774999999997931
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.37908299999998
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6982920000000092
+        },
+        "load-isolated-reload": {
+          "medianMs": 4.947624999999988
+        },
+        "load-cleanup": {
+          "medianMs": 0.09412500000001955
+        },
+        "load-virtual": {
+          "medianMs": 52.93816699999999
+        },
+        "request-virtual": {
+          "medianMs": 9.551458999999994
+        },
+        "lift-http": {
+          "medianMs": 6.341332999999992
+        },
+        "request-http": {
+          "medianMs": 10.698417000000006
+        },
+        "lift-cleanup": {
+          "medianMs": 0.3684590000000014
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.21162499999999795
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 35.816083000000006
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.019875000000013188
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.04774999999997931
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.37908299999998
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6982920000000092
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 4.947624999999988
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.09412500000001955
+        },
+        {
+          "name": "load-virtual",
+          "ms": 52.93816699999999
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.551458999999994
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.341332999999992
+        },
+        {
+          "name": "request-http",
+          "ms": 10.698417000000006
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.3684590000000014
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "label": "current",
+      "totalProcessMs": 243.92312500000025,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.20974999999999966
+        },
+        "load-fresh-instance": {
+          "medianMs": 35.85050000000001
+        },
+        "load-warm": {
+          "medianMs": 0.021041999999994232
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.058250000000015234
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.4639160000000118
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.6720410000000072
+        },
+        "load-isolated-reload": {
+          "medianMs": 5.118290999999999
+        },
+        "load-cleanup": {
+          "medianMs": 0.118583000000001
+        },
+        "load-virtual": {
+          "medianMs": 55.51279199999999
+        },
+        "request-virtual": {
+          "medianMs": 9.844415999999995
+        },
+        "lift-http": {
+          "medianMs": 6.453624999999988
+        },
+        "request-http": {
+          "medianMs": 10.92866699999999
+        },
+        "lift-cleanup": {
+          "medianMs": 0.37137500000000045
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.20974999999999966
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 35.85050000000001
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.021041999999994232
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.058250000000015234
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.4639160000000118
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.6720410000000072
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 5.118290999999999
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.118583000000001
+        },
+        {
+          "name": "load-virtual",
+          "ms": 55.51279199999999
+        },
+        {
+          "name": "request-virtual",
+          "ms": 9.844415999999995
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.453624999999988
+        },
+        {
+          "name": "request-http",
+          "ms": 10.92866699999999
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.37137500000000045
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "label": "current",
+      "totalProcessMs": 245.82829200000015,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.2224170000000072
+        },
+        "load-fresh-instance": {
+          "medianMs": 36.30945799999999
+        },
+        "load-warm": {
+          "medianMs": 0.021625000000000227
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.055374999999997954
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.515166999999991
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.7013330000000053
+        },
+        "load-isolated-reload": {
+          "medianMs": 5.605500000000006
+        },
+        "load-cleanup": {
+          "medianMs": 0.12495899999998983
+        },
+        "load-virtual": {
+          "medianMs": 56.20849999999999
+        },
+        "request-virtual": {
+          "medianMs": 10.042166999999978
+        },
+        "lift-http": {
+          "medianMs": 7.642541999999992
+        },
+        "request-http": {
+          "medianMs": 10.823250000000002
+        },
+        "lift-cleanup": {
+          "medianMs": 0.39358299999997826
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.2224170000000072
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 36.30945799999999
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.021625000000000227
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.055374999999997954
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.515166999999991
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.7013330000000053
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 5.605500000000006
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.12495899999998983
+        },
+        {
+          "name": "load-virtual",
+          "ms": 56.20849999999999
+        },
+        {
+          "name": "request-virtual",
+          "ms": 10.042166999999978
+        },
+        {
+          "name": "lift-http",
+          "ms": 7.642541999999992
+        },
+        {
+          "name": "request-http",
+          "ms": 10.823250000000002
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.39358299999997826
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "label": "baseline",
+      "totalProcessMs": 250.57208300000002,
+      "node": "v24.14.1",
+      "platform": "darwin/arm64",
+      "module": "/Users/koo/Documents/Codex/2026-10-03/task/sounding-baseline",
+      "rounds": 1,
+      "browser": "unavailable: playwright not installed; browser lane not measured",
+      "isolation": "Fresh temp fixture per round; reload gives new Sails/hook; concurrent runtime contexts share Sails/hook; no ORM and no outbound requests.",
+      "summary": {
+        "factory-unit": {
+          "medianMs": 0.21775000000000944
+        },
+        "load-fresh-instance": {
+          "medianMs": 36.69725000000001
+        },
+        "load-warm": {
+          "medianMs": 0.024332999999984395
+        },
+        "load-coalesced-8": {
+          "medianMs": 0.05762500000000159
+        },
+        "runtime-serial-8": {
+          "medianMs": 1.5036249999999995
+        },
+        "runtime-concurrent-8": {
+          "medianMs": 0.7127499999999998
+        },
+        "load-isolated-reload": {
+          "medianMs": 5.728042000000016
+        },
+        "load-cleanup": {
+          "medianMs": 0.10162500000001273
+        },
+        "load-virtual": {
+          "medianMs": 56.09899999999999
+        },
+        "request-virtual": {
+          "medianMs": 10.232915999999989
+        },
+        "lift-http": {
+          "medianMs": 6.747959000000009
+        },
+        "request-http": {
+          "medianMs": 11.07650000000001
+        },
+        "lift-cleanup": {
+          "medianMs": 0.36633399999999483
+        }
+      },
+      "samples": [
+        {
+          "name": "factory-unit",
+          "ms": 0.21775000000000944
+        },
+        {
+          "name": "load-fresh-instance",
+          "ms": 36.69725000000001
+        },
+        {
+          "name": "load-warm",
+          "ms": 0.024332999999984395
+        },
+        {
+          "name": "load-coalesced-8",
+          "ms": 0.05762500000000159
+        },
+        {
+          "name": "runtime-serial-8",
+          "ms": 1.5036249999999995
+        },
+        {
+          "name": "runtime-concurrent-8",
+          "ms": 0.7127499999999998
+        },
+        {
+          "name": "load-isolated-reload",
+          "ms": 5.728042000000016
+        },
+        {
+          "name": "load-cleanup",
+          "ms": 0.10162500000001273
+        },
+        {
+          "name": "load-virtual",
+          "ms": 56.09899999999999
+        },
+        {
+          "name": "request-virtual",
+          "ms": 10.232915999999989
+        },
+        {
+          "name": "lift-http",
+          "ms": 6.747959000000009
+        },
+        {
+          "name": "request-http",
+          "ms": 11.07650000000001
+        },
+        {
+          "name": "lift-cleanup",
+          "ms": 0.36633399999999483
+        }
+      ]
+    }
+  ]
+}

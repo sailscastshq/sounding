@@ -1,0 +1,27 @@
+name: Test
+on:
+  push:
+    branches: ['main', 'feat/**']
+  pull_request:
+    branches: ['main']
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild better-sqlite3
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm pack --ignore-scripts --workspaces=false
+      - run: npm pack ./plugins/hook --ignore-scripts
+      - run: npm pack ./plugins/stress --ignore-scripts

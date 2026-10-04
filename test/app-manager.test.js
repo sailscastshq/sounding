@@ -301,3 +301,60 @@ test('createAppManager suppresses noisy app boot logs when quiet mode is enabled
   assert.equal(captured.some((line) => line.includes('No new issues to notify')), false)
   assert.equal(captured.some((line) => line.includes('A real application log we should keep.')), true)
 })
+
+test('constructor loadOptions override file config without changing lift options', async (t) => {
+  const appPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-load-options-'))
+  t.after(() => fs.rmSync(appPath, { recursive: true, force: true }))
+  fs.mkdirSync(path.join(appPath, 'config'))
+  fs.writeFileSync(path.join(appPath, 'config/sounding.js'), `module.exports.sounding = {
+    datastore: 'inherit', app: { loadOptions: { probe: { fromFile: true, value: 1 } } }
+  }`)
+  const calls = []
+  class Sails {
+    load(options, done) { calls.push(options); done(null, this) }
+    lift(options, done) { calls.push(options); done(null, this) }
+    lower(done) { done() }
+  }
+  const manager = createAppManager({ appPath, SailsConstructor: Sails,
+    loadOptions: { probe: { value: 2 }, globals: false }, liftOptions: { port: 0 } })
+  t.after(() => manager.lower())
+  await manager.load()
+  await manager.lift()
+  assert.deepEqual(calls[0].probe, { fromFile: true, value: 2 })
+  assert.equal(calls[0].globals, false)
+  assert.equal(calls[1].probe, undefined)
+  assert.equal(calls[1].port, 0)
+})
+
+test('lower waits for an in-flight boot and propagates teardown errors after both apps finish', async (t) => {
+  const appPath = fs.mkdtempSync(path.join(os.tmpdir(), 'sounding-cleanup-'))
+  t.after(() => fs.rmSync(appPath, { recursive: true, force: true }))
+  fs.mkdirSync(path.join(appPath, 'config'))
+  fs.writeFileSync(path.join(appPath, 'config/sounding.js'), "module.exports.sounding = { datastore: 'inherit' }")
+  const failure = new Error('hook failed to close')
+  let finishLoad
+  let started
+  const loadStarted = new Promise(resolve => { started = resolve })
+  const closed = []
+  class Sails {
+    load(options, done) { this.mode = 'load'; finishLoad = () => done(null, this); started() }
+    lift(options, done) { this.mode = 'lift'; done(null, this) }
+    lower(done) {
+      setImmediate(() => { closed.push(this.mode); done(this.mode === 'load' ? failure : null) })
+    }
+  }
+  const manager = createAppManager({ appPath, SailsConstructor: Sails })
+  const loading = manager.load()
+  await loadStarted
+  await manager.lift()
+  const cleanup = manager.lower()
+  assert.deepEqual(closed, [])
+  finishLoad()
+  await loading
+  await assert.rejects(cleanup, error => error === failure)
+  assert.deepEqual(closed.sort(), ['lift', 'load'])
+  assert.equal(globalThis.sails, undefined)
+  assert.equal(globalThis.sounding, undefined)
+  assert.equal(manager.lifecycle.load.status, 'idle')
+  assert.equal(manager.lifecycle.lift.status, 'idle')
+})
