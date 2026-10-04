@@ -1,21 +1,18 @@
-# Sounding hook fixtures — unpublished local MVP
+# Sounding hook fixtures
 
-This package is local work for [issue #101](https://github.com/sailscastshq/sounding/issues/101).
-It requires the matching local Sounding build with plugin preparation support.
-Released Sounding 0.2.0 does not contain that support. Neither package was published.
-The exact core package name is `sounding`; the plugin is `sounding-plugin-hook`.
+Test reusable Sails hooks with a real Sails instance and the normal Sounding trial API.
+Requires Sounding 0.3.0 or later.
 
 ## Minimum setup
 
 In the hook package, retain its normal `sails.isHook`, optional `sails.hookName`,
-package name and entry point. Install the matching **local core and plugin** plus
-Sails as development dependencies. For example, use the locally packed artifacts:
+package name and entry point. Install Sounding, this plugin, and Sails as development dependencies:
 
 ```sh
-npm install -D /absolute/path/sounding-0.2.0.tgz /absolute/path/sounding-plugin-hook-0.0.0.tgz sails@1.5.18
+npm install -D sounding@^0.3.0 sounding-plugin-hook@^0.1.0 sails@^1.5.18
 ```
 
-Do not substitute the registry's current `sounding@0.2.0` for this unpublished build.
+`sounding@0.2.x` does not support hook fixture preparation.
 The plugin must appear in the hook package's `package.json` dependencies or
 `devDependencies`; Sounding discovers it automatically. No config registration
 array and no `test` import from the plugin are required. The test import stays:
@@ -67,8 +64,7 @@ Each trial gets a fresh temporary fixture and Sails/hook instance. The plugin
 uses load by default; HTTP, browser/socket options or `hook.app: 'lift'` request
 lift. HTTP fixtures bind to loopback and an ephemeral port by default. The added
 integration tests verify HTTP promotion. Real browser/socket hook variants still
-need their packages and hook dependencies plus separate integration proof; this
-MVP makes no new coverage claim for them.
+need their packages and hook dependencies plus separate integration proof; browser/socket lifecycle integration must be verified separately.
 
 Concurrent hook trials are rejected with `E_SOUNDING_HOOK_CONCURRENCY`. Sails and
 Sounding still use process globals; a fresh fixture is not proof of safe parallel
@@ -102,7 +98,7 @@ no database. A core datastore-disabled mode remains a follow-up.
 
 Fixtures are always fresh. Warm fixture reuse, `reload: false`, `test.hookFails`,
 `test.hookFactory`, package-discovery mounts and extra matchers are not part of
-this MVP. Root/per-trial unsupported options reject rather than silently doing
+this release. Root/per-trial unsupported options reject rather than silently doing
 nothing.
 
 ## Cleanup and failure contract
@@ -125,7 +121,7 @@ runs on ownership conflicts as well.
 From the Sounding worktree:
 
 ```sh
-SOUNDING_HOOK_ROOT=/Users/koo/Gringotts/687/sails-hook-node-fetch node examples/hooks/run-plugin-demo.js
+SOUNDING_HOOK_ROOT=/path/to/sails-hook-node-fetch node examples/hooks/run-plugin-demo.js
 ```
 
 The driver materializes a disposable hook package, registers the local core and
@@ -138,7 +134,7 @@ paths are gone. No outbound request is made.
 To demonstrate visible failure reporting without leaving fixtures behind:
 
 ```sh
-SOUNDING_DEMO_FAIL=1 SOUNDING_HOOK_ROOT=/Users/koo/Gringotts/687/sails-hook-node-fetch node examples/hooks/run-plugin-demo.js
+SOUNDING_DEMO_FAIL=1 SOUNDING_HOOK_ROOT=/path/to/sails-hook-node-fetch node examples/hooks/run-plugin-demo.js
 ```
 
 This intentionally exits with status 1: the first trial reports the sentinel
@@ -151,7 +147,7 @@ trigger; it does not turn failures into successes.
 From the Sounding worktree, run:
 
 ```sh
-SOUNDING_HOOK_ROOT=/Users/koo/Gringotts/687/sails-hook-shipwright node examples/hooks/run-plugin-demo.js shipwright
+SOUNDING_HOOK_ROOT=/path/to/sails-hook-shipwright node examples/hooks/run-plugin-demo.js shipwright
 ```
 
 The driver registers the local core/plugin and Sails in a disposable project,

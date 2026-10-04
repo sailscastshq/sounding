@@ -27,7 +27,7 @@ function project(t) {
       name: '@fixture/sails-hook-probe',
       main: 'index.js',
       sails: { isHook: true, hookName: 'probe' },
-      devDependencies: { 'sounding-plugin-hook': '0.0.0' },
+      devDependencies: { 'sounding-plugin-hook': require('../plugins/hook/package.json').version },
     })
   )
   fs.writeFileSync(

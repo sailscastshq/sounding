@@ -27,8 +27,8 @@ try {
       main: 'index.js',
       dependencies: {},
       devDependencies: {
-        sounding: '0.2.0',
-        'sounding-plugin-hook': '0.0.0',
+        sounding: require(path.join(coreRoot, 'package.json')).version,
+        'sounding-plugin-hook': require(path.join(pluginRoot, 'package.json')).version,
         sails: require('sails/package.json').version,
       },
     })

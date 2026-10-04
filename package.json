@@ -1,6 +1,6 @@
 {
   "name": "sounding",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Testing framework for Sails applications and The Boring JavaScript Stack.",
   "main": "index.js",
   "bin": {
@@ -51,6 +51,7 @@
     "sails-hook-sockets": "^3.0.2",
     "sails-sqlite": "^0.2.6",
     "socket.io-client": "^4.8.3",
+    "sounding": "file:.",
     "typescript": "^6.0.3"
   }
 }

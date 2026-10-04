@@ -1,9 +1,18 @@
 {
   "name": "sounding-plugin-hook",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Unreleased direct-mount fixture support for reusable Sails hooks.",
+  "version": "0.1.0",
+  "description": "Isolated real Sails fixtures for reusable hook tests with Sounding.",
   "main": "index.js",
   "license": "MIT",
-  "peerDependencies": { "sounding": "^0.2.0" }
+  "peerDependencies": {
+    "sounding": "^0.3.0"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

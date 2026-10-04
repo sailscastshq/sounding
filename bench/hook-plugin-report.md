@@ -1,5 +1,9 @@
 # Local issue #101 MVP — verified 2026-10-03
 
+Historical measurement snapshot at commit `56addc6`, before release preparation.
+For the proposed package versions and release contract, see
+[0.3.0 release notes](../releases/v0.3.0.md).
+
 This resumes the lifecycle-only commit `2019d68` with a working **unpublished**
 `sounding-plugin-hook`. Public core package name is `sounding`; main is still
 `aa3dd8b5bcd104c99d6df7d20c267d1108849304`, version 0.2.0. The local core package
